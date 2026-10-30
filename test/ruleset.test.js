@@ -1,38 +1,24 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { githubHeaders, probeGithub, resolveApiRoot, resolveRepository, resolveToken } from '../test-support/live-github.js';
 
-const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const API_ROOT = 'https://api.github.com';
+const API_ROOT = resolveApiRoot();
 const PROTECTED_REF = 'refs/heads/main';
 const REQUIRED_CHECK_CONTEXT = 'test';
-const localGhToken = () => {
-  const result = spawnSync('gh', ['auth', 'token'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-  return result.status === 0 ? result.stdout.trim() : '';
-};
-const TOKEN = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN ?? localGhToken();
-
-const resolveRepository = () => {
-  const result = spawnSync('git', ['remote', 'get-url', 'origin'], { cwd: ROOT, encoding: 'utf8' });
-  const origin = result.status === 0 ? result.stdout.trim() : '';
-  for (const candidate of [origin, process.env.GITHUB_REPOSITORY ?? '']) {
-    const match = /github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?\/?$/.exec(candidate);
-    if (match) return `${match[1]}/${match[2]}`;
-  }
-  assert.fail(`cannot resolve owner/repo from origin ${JSON.stringify(origin)} or GITHUB_REPOSITORY`);
-};
+const USER_AGENT = 'macos-hello-ruleset-test';
+const TOKEN = resolveToken();
 
 let repository;
 const repoSlug = () => (repository ??= resolveRepository());
 
+// These cases assert live repository state, so an offline machine, a missing
+// token or a rate limit must skip them with a readable reason instead of
+// failing the whole suite. The probe still returns null when the API is usable.
+const LIVE_SKIP = await probeGithub({ repository: repoSlug(), token: TOKEN, apiRoot: API_ROOT, userAgent: USER_AGENT });
+
 const getJson = async (path) => {
   const response = await fetch(`${API_ROOT}/repos/${repoSlug()}${path}`, {
-    headers: {
-      Accept: 'application/vnd.github+json',
-      'User-Agent': 'macos-hello-ruleset-test',
-      ...(TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {}),
-    },
+    headers: githubHeaders(TOKEN, USER_AGENT),
   });
   const body = await response.json().catch(() => null);
   assert.equal(
@@ -88,14 +74,14 @@ const ruleOfType = (rules, type) => {
 const requiredCheckContexts = (rules) =>
   (ruleOfType(rules, 'required_status_checks').parameters?.required_status_checks ?? []).map((check) => check.context);
 
-test('S8 AC1 main branch ruleset blocks branch deletion and force pushes', async () => {
+test('S8 AC1 main branch ruleset blocks branch deletion and force pushes', { skip: LIVE_SKIP ?? undefined }, async () => {
   const { rules } = await mainProtection();
   const types = ruleTypes(rules);
   assert.ok(types.includes('deletion'), `main branch ruleset must block branch deletion, got rules ${JSON.stringify(types)}`);
   assert.ok(types.includes('non_fast_forward'), `main branch ruleset must block force pushes, got rules ${JSON.stringify(types)}`);
 });
 
-test('S8 AC1 main branch ruleset requires a pull request with the test status check', async () => {
+test('S8 AC1 main branch ruleset requires a pull request with the test status check', { skip: LIVE_SKIP ?? undefined }, async () => {
   const { rules } = await mainProtection();
   ruleOfType(rules, 'pull_request');
   const contexts = requiredCheckContexts(rules);
@@ -105,7 +91,7 @@ test('S8 AC1 main branch ruleset requires a pull request with the test status ch
   );
 });
 
-test('S8 AC3 main branch ruleset requires no human approval', async () => {
+test('S8 AC3 main branch ruleset requires no human approval', { skip: LIVE_SKIP ?? undefined }, async () => {
   const { rules } = await mainProtection();
   const { parameters = {} } = ruleOfType(rules, 'pull_request');
   assert.equal(
@@ -117,7 +103,7 @@ test('S8 AC3 main branch ruleset requires no human approval', async () => {
   assert.notEqual(parameters.require_last_push_approval, true, 'ruleset must not require last push approval');
 });
 
-test('S8 AC2 a failing test check blocks merging because no actor may bypass the main ruleset', async () => {
+test('S8 AC2 a failing test check blocks merging because no actor may bypass the main ruleset', { skip: LIVE_SKIP ?? undefined }, async () => {
   const { rulesets, rules } = await mainProtection();
   const contexts = requiredCheckContexts(rules);
   assert.ok(
