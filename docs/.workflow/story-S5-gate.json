@@ -1,0 +1,102 @@
+{
+  "story_id": "S5",
+  "title": "编写核心函数单元测试",
+  "status": "pass",
+  "branch": "chore/S5",
+  "base_branch": "develop",
+  "base_sha": "a53d67f049d2c11df86bce7e966803c9ac212bcb",
+  "head_sha": "b0bf3098a17bcce25eec0f98eb5b613572480a90",
+  "commits": [
+    "b0bf309 test(S5): add failing tests for 编写核心函数单元测试"
+  ],
+  "pr": {
+    "number": 16,
+    "url": "https://github.com/tomagoyaky/macos-hello/pull/16",
+    "state": "OPEN",
+    "baseRefName": "develop",
+    "mergeable": "MERGEABLE",
+    "headRefOid": "b0bf3098a17bcce25eec0f98eb5b613572480a90"
+  },
+  "checks": [
+    {
+      "id": 1,
+      "name": "分支名匹配 ^(feature|fix|chore)/",
+      "result": "pass",
+      "evidence": "git rev-parse --abbrev-ref HEAD => chore/S5，匹配 ^(feature|fix|chore)/。git rev-parse HEAD、git ls-remote --heads origin chore/S5、PR headRefOid 三者同为 b0bf3098a17bcce25eec0f98eb5b613572480a90；git rev-list --left-right --count develop...HEAD => 0\t1（develop 无新提交，HEAD 领先 1 个），git merge-base develop HEAD => a53d67f049d2c11df86bce7e966803c9ac212bcb。"
+    },
+    {
+      "id": 2,
+      "name": "develop..HEAD 每条提交符合 conventional commits",
+      "result": "pass",
+      "evidence": "git log develop..HEAD --format=%s => 'b0bf3098a17bcce25eec0f98eb5b613572480a90 test(S5): add failing tests for 编写核心函数单元测试'，逐条 grep -Eq '^(feat|fix|docs|chore|refactor|test|perf|ci|style)(\\([^)]+\\))?: .+' 输出 MATCH，无不符合项（提交总数 1）。"
+    },
+    {
+      "id": 3,
+      "name": "存在 test(S5): 提交且早于实现提交",
+      "result": "pass",
+      "evidence": "git log --reverse develop..HEAD --format='%H %s' => 仅一条 b0bf309 test(S5): add failing tests for 编写核心函数单元测试（15:34:18 +0800），分支内不存在实现提交。本 Story 为 type=chore 的纯测试补写任务，实现已在 S2~S4 合并入 develop，故无后续实现提交，「test 提交早于实现提交」按分支内顺序 vacuously 成立。git show --stat b0bf309 => test/greet.test.js | 72 +, 1 file changed, 72 insertions(+), 1 deletion(-)；git diff --stat develop...HEAD -- src/ bin/ 为空，git diff --name-only develop...HEAD 仅 test/greet.test.js，生产代码零改动，测试提交未夹带实现。"
+    },
+    {
+      "id": 4,
+      "name": "lint、typecheck、test 全部 exit 0（不存在的跳过并注明）",
+      "result": "pass",
+      "evidence": "package.json scripts = {lint: 'node --check bin/hello.js', test: 'node --test', build: 'node --check bin/hello.js'}；无 typecheck / type-check 脚本，pnpm run typecheck => ERR_PNPM_NO_SCRIPT Missing script: typecheck，exit=1，按规则跳过并注明。pnpm lint => exit=0；pnpm test => tests 39 / suites 0 / pass 39 / fail 0 / cancelled 0 / skipped 0 / todo 0，exit=0。"
+    },
+    {
+      "id": 5,
+      "name": "develop...HEAD 至少包含一个 test/spec 文件",
+      "result": "pass",
+      "evidence": "git diff --name-only develop...HEAD => test/greet.test.js；git diff --stat develop...HEAD => 'test/greet.test.js | 73 +++… 1 file changed, 72 insertions(+), 1 deletion(-)'。变更集合与 story.test_files 完全一致，无越界文件。"
+    },
+    {
+      "id": 6,
+      "name": "验收标准逐条映射到测试名称或测试内容",
+      "result": "pass",
+      "evidence": "AC1（覆盖 UT-01~UT-14 共 14 条、直接 import src/greet.js、不创建子进程、pnpm test 失败 0 且 exit 0）-> grep -c \"test('US-0[12] / UT-\" test/greet.test.js => 14，UT-01~UT-14 各一条；grep -o 'UT-[0-9][0-9]' 去重后恰为 UT-01~UT-14；test/greet.test.js:4 'import { formatGreeting, parseCliArgs, UsageError, USAGE } from ../src/greet.js'；grep -nE 'spawn|exec|child_process' test/greet.test.js => NONE；pnpm test tests 39 / pass 39 / fail 0 / exit 0。AC2（异常路径 6 类各至少 1 条并断言 UsageError）-> :56 UT-08 空字符串取值、:60 UT-09 缺失取值、:64 UT-10 未知选项、:68 UT-11 --help、:72 UT-12 位置参数、:76 UT-13 歧义取值，统一经 assertUsageError（:13-26）断言 error instanceof UsageError 且 error.message === USAGE；另有 :117 'US-02 AC3 parseCliArgs wraps every parse failure as UsageError' 聚合校验 7 种非法 argv。AC3（用例名称含 US 编号前缀，TAP 可直接定位）-> node --test --test-reporter=tap test/greet.test.js 输出 'ok 1 - US-01 / UT-01 formatGreeting() returns \"Hello, World!\"' … 'ok 14 - US-02 / UT-14 parseCliArgs([\"--name\", \"a\", \"--name\", \"b\"]) keeps the last value'，17 条 ok 行全部带 US-01/US-02 前缀，exit=0。"
+    },
+    {
+      "id": 7,
+      "name": "DRY_RUN=false：gh pr view 成功且 state=OPEN、baseRefName=develop",
+      "result": "pass",
+      "evidence": "gh pr view \"chore/S5\" --repo \"tomagoyaky/macos-hello\" --json state,mergeable,url,baseRefName => {\"baseRefName\":\"develop\",\"mergeable\":\"MERGEABLE\",\"state\":\"OPEN\",\"url\":\"https://github.com/tomagoyaky/macos-hello/pull/16\"}，exit=0。补充查询：number=16、title='S5: 编写核心函数单元测试'、headRefOid=b0bf3098a17bcce25eec0f98eb5b613572480a90、changedFiles=1、additions=72、deletions=1，与本机 HEAD 一致。"
+    },
+    {
+      "id": 8,
+      "name": "DRY_RUN=true 的 plan 文件与工作区洁净检查",
+      "result": "pass",
+      "evidence": "不适用：本次 DRY_RUN=false，该条件性检查未触发。旁证：git status --porcelain 仅 ?? .claude/、?? CLAUDE.md、?? docs/（均为此前即存在的未跟踪工作流产物，非本 Story 产生），git diff --cached --stat 为空，业务文件无脏改动。"
+    }
+  ],
+  "red_evidence_cross_check": {
+    "result": "confirmed",
+    "detail": "独立复跑 TDD 遗留的变异副本 /tmp/s5-red-check：diff -q 证实其中 test/greet.test.js 与仓库提交版本逐字节相同；diff -u 证实 src/greet.js 与仓库版本仅差一行（副本移除了 `if (values.name === '') throw new UsageError();` 空值拦截，真实仓库 src/ 未被改动）。在该副本运行 node --test test/greet.test.js => tests 17 / pass 15 / fail 2，exit=1；失败正是 'US-02 / UT-08 parseCliArgs([\"--name\", \"\"]) throws UsageError for an empty value' 与 'US-02 AC3 parseCliArgs wraps every parse failure as UsageError'，报错 'AssertionError [ERR_ASSERTION]: Missing expected exception: [\"--name\",\"\"] must be rejected'，与 TDD 报告原始输出一致，证明断言具备拦截回归的能力。"
+  },
+  "acceptance": [
+    {
+      "criterion": "test/greet.test.js 覆盖 UT-01 至 UT-14 共 14 条用例，直接 import src/greet.js，不创建子进程；pnpm test 失败数为 0 且退出码为 0",
+      "result": "pass",
+      "evidence": "14 条 UT 用例齐全（UT-01~UT-03 formatGreeting，UT-04~UT-14 parseCliArgs，与 docs/TRD.md 用例表逐条对应）；import 语句直接指向 ../src/greet.js；文件内无 child_process/spawn/exec* 引用；pnpm test 39/39 通过、fail 0、exit 0。"
+    },
+    {
+      "criterion": "异常路径用例（空字符串取值、缺失取值、未知选项、--help、位置参数、歧义取值）各至少 1 条，并断言抛出 UsageError",
+      "result": "pass",
+      "evidence": "UT-08（--name ''）、UT-09（--name）、UT-10（--foo）、UT-11（--help）、UT-12（extra）、UT-13（--name -x）六条各自独立，均调用 assertUsageError，同时断言 instanceof UsageError 与固定 usage 文案（error.message === USAGE），比仅断言 error.name 更严格。"
+    },
+    {
+      "criterion": "用例名称包含 US 编号前缀，TAP 输出中可直接定位到具体用例名",
+      "result": "pass",
+      "evidence": "17 条用例名均以 'US-01 …' 或 'US-02 …' 开头；TAP 输出 17 条 ok 行（ok 1 ~ ok 17）逐条带完整用例名与 UT 编号，可直接定位。"
+    }
+  ],
+  "notes": [
+    "用例命名把 US 编号与 UT 编号并列（如 'US-02 / UT-08 …'），TAP 失败时能同时定位到验收标准与设计用例，追溯性强。",
+    "assertUsageError 统一断言 instanceof UsageError + message 等于固定 USAGE 文案，比 S4 阶段的 error.name 断言更强，能防止文案漂移。",
+    "改写前的 3 条既有用例（US-01 AC3 静态源码检查、US-01 AC3 环境/时钟隔离、US-02 AC3 聚合异常包装）原样保留，未删除或跳过任何既有测试，回归面完整。",
+    "US-01 AC3 环境/时钟隔离用例临时改写 process.env、Date.now、Math.random 后在 finally 中完整还原；node --test 按文件隔离进程，无跨文件污染。",
+    "静态扫描规则 /\\bcrypto\\./ 无法覆盖 `import { randomInt } from 'node:crypto'` 这类无点号用法，属既有守卫盲区，当前实现零 import，行为用例已兜底。",
+    "US-02 AC3 聚合用例仅断言 error.name === 'UsageError'，强度低于逐条用例的 instanceof+message 断言，属冗余兜底，可接受。",
+    "本 Story 为纯测试补写（type=chore），实现已于 S2~S4 合并入 develop；RED 证据以临时副本变异方式取得（真实 src/ 未改动），与 backlog 中该 Story 的 test_first 约定一致。",
+    "环境提示：本机 Node 为 v25.6.1，.nvmrc 钉 20 未切换；node --test 断言与 parseArgs 语义在两者一致，Node 20 的 CI 覆盖由 S7/S8 负责。",
+    "lint 脚本仍仅 node --check bin/hello.js，未覆盖 src/greet.js 与测试文件本身，静态检查盲区延续。"
+  ]
+}

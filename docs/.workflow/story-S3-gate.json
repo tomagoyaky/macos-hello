@@ -1,0 +1,171 @@
+{
+  "story_id": "S3",
+  "title": "实现 --name 正常取值问候",
+  "status": "pass",
+  "branch": "feature/S3",
+  "base_branch": "develop",
+  "base_sha": "581bdb9f9d23c0cbd940020e5a6e353f35a8cca9",
+  "head_sha": "7a1ba3b585bedcf051f62d6de7462caa1bf6487f",
+  "commits": [
+    "d0a9115 test(S3): add failing tests for 实现 --name 正常取值问候",
+    "7a1ba3b feat(cli): 实现 --name 正常取值问候"
+  ],
+  "pr": {
+    "number": 14,
+    "url": "https://github.com/tomagoyaky/macos-hello/pull/14",
+    "state": "OPEN",
+    "baseRefName": "develop",
+    "mergeable": "MERGEABLE",
+    "headRefOid": "7a1ba3b585bedcf051f62d6de7462caa1bf6487f"
+  },
+  "checks": [
+    {
+      "id": 1,
+      "name": "分支名匹配 ^(feature|fix|chore)/",
+      "result": "pass",
+      "evidence": "git branch --show-current => feature/S3，逐字匹配 ^(feature|fix|chore)/。upstream 为 origin/feature/S3，本机 HEAD 7a1ba3b 与远端、PR headRefOid 三者一致。"
+    },
+    {
+      "id": 2,
+      "name": "develop..HEAD 每条提交符合 conventional commits",
+      "result": "pass",
+      "evidence": "git log develop..HEAD --format=%s 得到两条：'feat(cli): 实现 --name 正常取值问候'、'test(S3): add failing tests for 实现 --name 正常取值问候'。逐条 grep -Eq '^(feat|fix|docs|chore|refactor|test|perf|ci|style)(\\([^)]+\\))?: .+' 均输出 OK。"
+    },
+    {
+      "id": 3,
+      "name": "存在 test(S3): 提交且早于实现提交",
+      "result": "pass",
+      "evidence": "git log --reverse develop..HEAD 顺序为 d0a9115（test(S3)）-> 7a1ba3b（feat(cli)）；git merge-base --is-ancestor d0a9115 7a1ba3b 退出 0。git show --stat d0a9115 仅 test/cli.test.js(+42)；git show --stat 7a1ba3b 仅 bin/hello.js(+3/-2) 与 src/greet.js(+12)；git diff --stat d0a9115..HEAD -- test/ 为空，实现提交未改动测试。"
+    },
+    {
+      "id": 4,
+      "name": "lint、typecheck、test 全部 exit 0（不存在的跳过并注明）",
+      "result": "pass",
+      "evidence": "package.json scripts = {\"lint\":\"node --check bin/hello.js\",\"test\":\"node --test\",\"build\":\"node --check bin/hello.js\"}，无 typecheck 脚本，按规则跳过并注明。pnpm run lint => lint_exit=0；pnpm test => tests 18 / pass 18 / fail 0 / skipped 0，test_exit=0。"
+    },
+    {
+      "id": 5,
+      "name": "develop...HEAD 至少包含一个 test/spec 文件",
+      "result": "pass",
+      "evidence": "git diff --name-only develop...HEAD => bin/hello.js / src/greet.js / test/cli.test.js，包含 test/cli.test.js。"
+    },
+    {
+      "id": 6,
+      "name": "验收标准逐条映射到测试名称或测试内容",
+      "result": "pass",
+      "evidence": "AC1（--name Alice 输出 Hello, Alice!\\n、stderr 空、退出码 0）-> test/cli.test.js 'US-02 AC1 / E2E-03 \"--name Alice\" writes exactly \"Hello, Alice!\\n\" to stdout'，assertGreeting 同时断言 stderr.length=0、status=0、stdout 逐字节相等。AC2 前半（--name \"Wu Ming\" 保留空格）-> 'US-02 AC2 / E2E-07 ... preserves the space in the greeting'；后半（--name=Alice 与 --name Alice 完全一致）-> 'US-02 AC2 / E2E-11 ... matches \"--name Alice\" byte-for-byte'（两次实跑 Buffer.compare===0）。AC3（不传 --name 仍为 Hello, World!\\n）-> 'US-02 AC3 / E2E-04 omitting --name keeps the default \"Hello, World!\\n\" greeting'。AC4（256 字符原样输出）-> 'US-02 AC4 / E2E-12 a 256-character --name value is emitted verbatim'，fixture 断言长度为 256 且含空格、双引号、反斜杠与大小写，stdout 期望为 'Hello, ' + fixture + '!\\n'。"
+    },
+    {
+      "id": 7,
+      "name": "DRY_RUN=false：gh pr view 成功且 state=OPEN、baseRefName=develop",
+      "result": "pass",
+      "evidence": "gh pr view \"feature/S3\" --repo \"tomagoyaky/macos-hello\" --json state,mergeable,url,baseRefName => {\"baseRefName\":\"develop\",\"mergeable\":\"MERGEABLE\",\"state\":\"OPEN\",\"url\":\"https://github.com/tomagoyaky/macos-hello/pull/14\"}，EXIT=0。补充查询得到 number=14、title='S3: 实现 --name 正常取值问候'、headRefOid=7a1ba3b…，与本机 HEAD 一致。"
+    },
+    {
+      "id": 8,
+      "name": "DRY_RUN=true 的 plan 文件与工作区洁净检查",
+      "result": "pass",
+      "evidence": "不适用：本次 DRY_RUN=false，该条件性检查未触发。旁证：git status --porcelain 仅显示 ?? .claude/、?? CLAUDE.md、?? docs/（为本 Story 之前即存在的未跟踪工作流产物），git diff --stat 与 git diff --cached --stat 均为空，无业务文件脏改动。"
+    }
+  ],
+  "red_evidence_cross_check": {
+    "result": "confirmed",
+    "detail": "用 git archive d0a9115 解包到 /tmp/s3-red-check 后独立运行 node --test：退出码 1，18 tests 中恰有 E2E-03、E2E-07、E2E-11、E2E-12 四条以断言失败呈红态（其余 13 条通过；archive 目录无 .git，导致依赖仓库元数据的 S1 用例额外失败一条，属解包环境伪失败，在真实仓库中该用例通过）。该结果与 TDD 报告的 18 tests / 14 pass / 4 fail 一致，Red 原因确为 --name 未实现，而非导入或语法错误。"
+  },
+  "acceptance": [
+    {
+      "criterion": "node bin/hello.js --name Alice 输出 Hello, Alice! 加一个换行符，标准错误为空，退出码为 0",
+      "result": "pass",
+      "evidence": "spawnSync 实跑：stdout='Hello, Alice!\\n'，stdoutHex=48656c6c6f2c20416c696365210a（16 字节），stderrLen=0，status=0。"
+    },
+    {
+      "criterion": "node bin/hello.js --name \"Wu Ming\" 输出 Hello, Wu Ming! 加一个换行符；--name=Alice 与 --name Alice 输出完全一致",
+      "result": "pass",
+      "evidence": "实跑 --name 'Wu Ming' => 'Hello, Wu Ming!\\n'（stderrLen=0，status=0）；--name=Alice 与 --name Alice 的 stdout 均为 48656c6c6f2c20416c696365210a，Buffer.equals 结果为 true（逐字节一致）。"
+    },
+    {
+      "criterion": "不传 --name 时输出仍为 Hello, World! 加一个换行符，行为与 S2 的验收结果一致",
+      "result": "pass",
+      "evidence": "实跑无参数 => 'Hello, World!\\n'，stdoutHex=48656c6c6f2c20576f726c64210a，stderrLen=0，status=0；E2E-04 回归护栏通过。"
+    },
+    {
+      "criterion": "传入 256 字符长度的 --name 取值时原样输出，不截断、不转义、不修改大小写",
+      "result": "pass",
+      "evidence": "fixture 'Ab c\"d\\\\' × 36 + 'efGH'，length=256（含空格、双引号、反斜杠、大小写）；实跑 stdout 长度 265 字节 = 'Hello, '(7) + 256 + '!\\n'(2)，与期望字符串 Buffer.equals 为 true，stderrLen=0，status=0，确认未截断、未转义、未改大小写。"
+    }
+  ],
+  "findings": [
+    {
+      "severity": "suggestion",
+      "title": "parseCliArgs 未捕获 parseArgs 异常，非法用法会泄漏 Node 内置 ERR_PARSE_ARGS 堆栈",
+      "detail": "src/greet.js:20 使用 parseArgs({ ..., strict: true })，对 --bogus、--name（缺值）、位置参数等非法输入会抛出 ERR_PARSE_ARGS_UNKNOWN_OPTION / ERR_PARSE_ARGS_INVALID_OPTION_VALUE，实跑 node bin/hello.js --bogus 直接打印 Node 内部堆栈并以非 0 退出。该行为属 S4『非法用法返回 Usage 提示并以退出码 1 结束、统一包装为 UsageError』的验收范围，不构成本 Story 失败；此处仅提示 S4 需在 parseCliArgs 或调用处 try/catch 并统一映射。"
+    },
+    {
+      "severity": "suggestion",
+      "title": "lint 脚本只对 bin/hello.js 做 node --check，新增逻辑文件 src/greet.js 不在静态检查范围",
+      "detail": "package.json 的 lint = 'node --check bin/hello.js'，而本 Story 的解析与格式化逻辑新增在 src/greet.js（+12 行），该文件仅被测试 import 间接覆盖，node --check 不检查它。按关卡规则 4（以 package.json 脚本为准）不构成失败；建议后续把 lint 扩为 'node --check bin/hello.js && node --check src/greet.js'，或在 CI（S7/S8）中补全。"
+    },
+    {
+      "severity": "nit",
+      "title": "--name \"\" 输出 'Hello, !'，缺省语义与空串未区分",
+      "detail": "values.name === '' 时会返回 { name: '' } 并输出 'Hello, !\\n'（实跑确认）。S4 已把 --name \"\" 明确列为应报 Usage 的非法用法，因此当前是已知的中间态；解析函数可考虑把空串视为缺失或直接交由 S4 的错误分支处理，避免语义分叉。"
+    },
+    {
+      "severity": "nit",
+      "title": "bin/hello.js 与 src/greet.js 仍无文件末尾换行",
+      "detail": "git diff 显示 '\\ No newline at end of file' 延续自 S2；不影响执行与 node --check，建议后续补尾换行以保持工具链一致性。"
+    }
+  ],
+  "positive_notes": [
+    "解析与格式化分离干净：parseCliArgs(argv) 显式接收参数数组、不读 process，formatGreeting(name) 为纯函数，I/O 与换行只在 bin/hello.js，符合项目『副作用只在 bin/』的约定，且为 S5 单元测试预留了可测入口。",
+    "直接使用 node:util 的 parseArgs，不引入任何第三方依赖，同时天然支持 --name Alice 与 --name=Alice 两种形式，AC2 的内联/分离一致性无需额外代码。",
+    "测试断言强度高：stderr 空、退出码 0、stdout 按 Buffer 逐字节比对，E2E-11 用 Buffer.compare 校验两种写法输出完全一致，E2E-12 先断言 fixture 恰为 256 字符再做整串比对，避免夹具漂移。",
+    "E2E-04 作为回归护栏在红态阶段即已通过，正确防止实现 --name 时回归默认问候行为。",
+    "红态真实可复现：独立从 d0a9115 解包运行测试，四条 --name 用例按断言失败，证明测试先行且失败原因为功能缺失。"
+  ],
+  "commands": [
+    "node '/Users/neolix/claudecode_workflow_ultracode/scripts/log-workflow-event.mjs' --root '/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello' --phase 3 --step 'story/S3/story-gate' --kind gate --actor 'Code Reviewer' --status start --parent-step 'story/S3' --message '开始' || true",
+    "git branch --show-current",
+    "git log develop..HEAD --format='%H%x09%s'",
+    "git log --reverse develop..HEAD --format='%H%x09%s'",
+    "git status --porcelain",
+    "git diff --stat",
+    "git diff --cached --stat",
+    "cat package.json",
+    "git diff --name-only develop...HEAD",
+    "pnpm run lint",
+    "pnpm test",
+    "cat -n bin/hello.js src/greet.js test/cli.test.js",
+    "ls -l src bin",
+    "gh pr view \"feature/S3\" --repo \"tomagoyaky/macos-hello\" --json state,mergeable,url,baseRefName",
+    "gh pr view feature/S3 --repo tomagoyaky/macos-hello --json number,title,headRefOid,commits,url,state,baseRefName,mergeable",
+    "node -e '<spawnSync 实跑 AC1~AC4 并输出 stdout/hex/stderr 长度/退出码>'",
+    "git show --stat --format='%H%n%s%n%an %ad' d0a9115",
+    "git show --stat --format='%H%n%s%n%an %ad' 7a1ba3b",
+    "git merge-base develop HEAD",
+    "git log -1 --format='%H %s' develop",
+    "git branch -vv",
+    "git rev-parse HEAD",
+    "git rev-parse origin/feature/S3",
+    "git rev-parse --abbrev-ref --symbolic-full-name @{u}",
+    "git rev-parse develop",
+    "git merge-base --is-ancestor d0a9115 7a1ba3b",
+    "git diff --stat d0a9115..HEAD -- test/",
+    "git ls-tree -r --name-only d0a9115",
+    "git log develop..HEAD --format=%s | while read s; do ... grep -Eq '^(feat|fix|docs|chore|refactor|test|perf|ci|style)(\\([^)]+\\))?: .+'; done",
+    "git diff develop...HEAD -- src/greet.js bin/hello.js",
+    "git diff --stat develop...HEAD",
+    "rm -rf /tmp/s3-red-check && mkdir -p /tmp/s3-red-check && git archive d0a9115 | tar -x -C /tmp/s3-red-check",
+    "cd /tmp/s3-red-check && node --test > /tmp/s3-red-check.log 2>&1; echo \"red_exit=$?\"",
+    "grep -E '^(ℹ|✖|✔)' /tmp/s3-red-check.log",
+    "node --version",
+    "pnpm --version",
+    "node -e 'console.log(JSON.stringify(require(\"./package.json\").scripts))'",
+    "node bin/hello.js --bogus 2>&1 | head -5",
+    "node bin/hello.js --name \"\" | od -An -c",
+    "grep -n -A 22 'id: S4' docs/backlog.yml",
+    "grep -n -A 18 'id: S3' docs/backlog.yml",
+    "date -u +%Y-%m-%dT%H:%M:%SZ"
+  ],
+  "timestamp": "2026-10-30T07:21:41Z"
+}

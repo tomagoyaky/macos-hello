@@ -1,0 +1,67 @@
+{
+  "phase": "4",
+  "status": "pass",
+  "tool_used": [
+    "pnpm 10.28.2（pnpm test / pnpm coverage / pnpm run lint）",
+    "Node.js 20.20.2（按 .nvmrc，node --test / node --test --experimental-test-coverage）",
+    "Reality Checker（独立质量关卡子代理）",
+    "gh CLI（gh pr view）",
+    "git（分支、HEAD、远端一致性、工作区状态）",
+    "grep / ls / sed 静态核对",
+    "Playwright（未安装，E2E 判定 skipped）",
+    "Bash"
+  ],
+  "commands": [
+    "node '/Users/neolix/claudecode_workflow_ultracode/scripts/log-workflow-event.mjs' --root '/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello' --phase 4 --step 'phase/4/gate' --kind gate --actor 'Reality Checker' --status start --parent-step 'phase/4' --message '开始' || true",
+    "jq -r '.phases[] | \"\\(.phase) \\(.status)\"' /Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/docs/.workflow/state.json",
+    "cat /Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/package.json",
+    "git -C /Users/neolix/claudecode_workflow_ultracode/demo/macos-hello rev-parse --abbrev-ref HEAD",
+    "git -C /Users/neolix/claudecode_workflow_ultracode/demo/macos-hello rev-parse HEAD",
+    "git -C /Users/neolix/claudecode_workflow_ultracode/demo/macos-hello rev-parse origin/test/phase-4",
+    "git -C /Users/neolix/claudecode_workflow_ultracode/demo/macos-hello status --porcelain",
+    "git -C /Users/neolix/claudecode_workflow_ultracode/demo/macos-hello log --oneline -12",
+    "git -C /Users/neolix/claudecode_workflow_ultracode/demo/macos-hello rev-list --left-right --count origin/develop...HEAD",
+    "gh pr view test/phase-4 --repo \"tomagoyaky/macos-hello\" --json state,baseRefName,url",
+    "PATH=\"/Users/neolix/.nvm/versions/node/v20.20.2/bin:$PATH\" pnpm run lint",
+    "PATH=\"/Users/neolix/.nvm/versions/node/v20.20.2/bin:$PATH\" pnpm test",
+    "PATH=\"/Users/neolix/.nvm/versions/node/v20.20.2/bin:$PATH\" pnpm coverage",
+    "GH_TOKEN=invalid-token node --test test/ruleset.test.js",
+    "node bin/hello.js",
+    "node bin/hello.js --name Alice",
+    "node bin/hello.js --name",
+    "node bin/hello.js --name=",
+    "node bin/hello.js --name 张三",
+    "ls e2e / node_modules/.bin/playwright",
+    "grep -n \"^test('\" test/cli.test.js test/greet.test.js test/coverage.test.js",
+    "bash '/Users/neolix/claudecode_workflow_ultracode/scripts/merge-phase-state.sh' '/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello' '/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/docs/.workflow/phase-4.json'"
+  ],
+  "artifacts": [
+    "/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/docs/test-report.md",
+    "/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/docs/.workflow/phase-4.json",
+    "/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/docs/.workflow/state.json"
+  ],
+  "e2e": {
+    "status": "skipped",
+    "framework": "none",
+    "reason": "纯零依赖 Node CLI，无 Web 前端/dev server/stagingUrl，Playwright 未安装且引入会违反 PRD US-05 零依赖；等价 CLI 黑盒用户路径由 test/cli.test.js（E2E-01~E2E-15）承接",
+    "impact": "无浏览器级端到端用例；核心 CLI 路径由真实子进程黑盒用例覆盖，不构成测试缺口",
+    "owner": "Phase 5 CI 维护者 / 项目维护者"
+  },
+  "gate": {
+    "name": "Phase 4 关卡",
+    "result": "pass",
+    "evidence": "前置校验：docs/.workflow/state.json 中 phase 3 存在且 status=pass。DRY_RUN=false，实际读取 package.json：scripts = lint(node --check bin/hello.js)、test(node --test)、coverage(node --test --experimental-test-coverage)、build(node --check bin/hello.js)，无 typecheck 脚本。Node 20.20.2（.nvmrc=20）实跑 pnpm test：90 tests / 90 pass / 0 fail / 0 cancelled / 0 skipped / 0 todo，EXIT=0，duration 11007ms；pnpm run lint EXIT=0；pnpm coverage EXIT=0，生产代码 bin/hello.js 行100%/分支50%/函数100%、src/greet.js 行100%/分支100%/函数100%，all files 行98.51%/分支83.59%/函数95.44%。上一轮审计 high 缺口已修复并复验：GH_TOKEN=invalid-token node --test test/ruleset.test.js => 4 tests / 0 pass / 0 fail / 4 skipped / EXIT=0，SKIP 原因含 '401: Bad credentials; export a valid GH_TOKEN'。覆盖率门禁已落地：test/coverage.test.js 'S6 every src/ file keeps at least 80% line coverage' 在 pnpm test 内真实 spawn 覆盖率套件并断言 src/ 行覆盖≥80%。E2E：DRY_RUN=false 但 usePlaywright=false，status=skipped，原因=纯 CLI 无 Web 面（e2e/ 与 node_modules/.bin/playwright 均不存在），非环境故障，等价路径由 test/cli.test.js 黑盒用例覆盖，影响与负责人已记入 risks。核心路径人工复核：默认 => Hello, World! exit 0；--name Alice => Hello, Alice! exit 0；--name => Usage 行 exit 1；--name= => Usage 行 exit 1；--name 张三 => Hello, 张三! exit 0。分支校验：HEAD=75dff221400674069ab03327d90c140a6fda44d8，origin/test/phase-4 同 SHA，当前分支 test/phase-4；PR #24 state=OPEN、baseRefName=develop（https://github.com/tomagoyaky/macos-hello/pull/24）。非测试源文件覆盖确认：bin/hello.js 由 test/cli.test.js 黑盒 + test/coverage.test.js 覆盖（行100%），src/greet.js 由 test/greet.test.js（UT-01~UT-16）覆盖（行/分支/函数100%），无遗漏生产源文件。"
+  },
+  "risks": [
+    "E2E（Playwright）整体 skipped：项目为纯 CLI，无 Web 入口/dev server/stagingUrl，Playwright 未安装且引入违反 PRD US-05 零依赖；补偿证据为 test/cli.test.js 黑盒用例。影响=无浏览器级验收。负责人：Phase 5 CI 维护者/项目维护者。",
+    "S8 四条 ruleset 实时检查在离线/无 token/限流时降级为 SKIP（已实测 401 时 4 skipped、EXIT=0）。若 CI 未注入 GH_TOKEN，这四条分支保护断言会绿灯跳过而未被真正校验。负责人：CI 维护者在仓库 Secrets 配置 GH_TOKEN。",
+    "覆盖率门禁只统计 src/：bin/hello.js 分支覆盖 50%（第 8 行兜底重抛不可达），且其行覆盖跌破 80% 不会被自动拦截。负责人：后续测试阶段。",
+    "契约冲突：--name 含换行时输出多行，违反 TRD D1『成功路径 stdout 恰为一行』；E2E-15 固化 D8 原样拼接行为并注明冲突，需 TRD/产品负责人裁定（TRD 负责人）。",
+    "边界缺回归用例（低）：非 ASCII（中文/emoji）名称与内联空值 --name= 无用例；本次手工实测行为正确（Hello, 张三! exit 0；--name= Usage exit 1）。负责人：后续测试阶段。",
+    "静态语法门禁范围过窄（低）：lint/build 仅 node --check bin/hello.js，src/greet.js 与 test/*.js 无语法检查。负责人：CI 维护者。",
+    "工作区仍有未跟踪文件（.claude/、CLAUDE.md、docs/PRD.md、docs/TRD.md、docs/backlog.yml、docs/.workflow/），PR #24 只含 test 提交 75dff22。负责人：工作流负责人确认是否入库。"
+  ],
+  "next_action": "运行 workflows/05-cicd.js",
+  "dry_run": false,
+  "timestamp": "2026-10-30T10:05:41Z"
+}

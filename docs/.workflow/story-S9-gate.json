@@ -1,0 +1,106 @@
+{
+  "story_id": "S9",
+  "title": "演练测试拦截回归",
+  "type": "chore",
+  "milestone": "M5",
+  "status": "pass",
+  "branch": "chore/S9",
+  "base_branch": "develop",
+  "base_sha": "e82a81457ca116ee58b21c40de5c3dcbfdb1aec5",
+  "head_sha": "5810e46b802948d98a681c01fa415275b7ec6b04",
+  "commits": [
+    "db409a6 test(S9): add failing tests for 演练测试拦截回归",
+    "5810e46 chore(S9): 演练测试拦截回归"
+  ],
+  "pr": {
+    "number": 22,
+    "url": "https://github.com/tomagoyaky/macos-hello/pull/22",
+    "state": "OPEN",
+    "baseRefName": "develop",
+    "mergeable": "MERGEABLE",
+    "headRefOid": "5810e46b802948d98a681c01fa415275b7ec6b04",
+    "changedFiles": 2,
+    "additions": 294,
+    "deletions": 0
+  },
+  "checks": [
+    {
+      "id": 1,
+      "name": "分支名匹配 ^(feature|fix|chore)/",
+      "result": "pass",
+      "evidence": "git branch --show-current => chore/S9，命中 ^(feature|fix|chore)/；git rev-parse HEAD origin/chore/S9 => 均为 5810e46b802948d98a681c01fa415275b7ec6b04；gh pr view chore/S9 --json headRefOid => 5810e46b802948d98a681c01fa415275b7ec6b04，三者一致。"
+    },
+    {
+      "id": 2,
+      "name": "develop..HEAD 每条提交符合 conventional commits",
+      "result": "pass",
+      "evidence": "git log develop..HEAD --format=%s => ['chore(S9): 演练测试拦截回归', 'test(S9): add failing tests for 演练测试拦截回归']，2/2 匹配 ^(feat|fix|docs|chore|refactor|test|perf|ci|style)(\\([^)]+\\))?: .+。"
+    },
+    {
+      "id": 3,
+      "name": "存在 test(S9): 提交且早于实现提交",
+      "result": "pass",
+      "evidence": "git log --reverse develop..HEAD => db409a6 2026-10-30 17:00:24 +0800 test(S9): … 在前、5810e46 2026-10-30 17:04:54 +0800 chore(S9): … 在后；git merge-base --is-ancestor db409a6 5810e46 退出码 0；git show --stat db409a6 => 仅 test/interception.test.js(+237)，5810e46 => 仅 docs/drill/S9-test-interception.json(+57)，无夹带生产代码。"
+    },
+    {
+      "id": 4,
+      "name": "lint、typecheck、test 全部 exit 0（缺失脚本跳过并注明）",
+      "result": "pass",
+      "evidence": "package.json scripts = lint/test/build，无 typecheck（纯 JS 无 tsc），按规则跳过并注明。pnpm lint 输出 '> node --check bin/hello.js'，LINT_EXIT=0；pnpm test 重定向后取退出码 TEST_EXIT=0，输出 ℹ tests 53 / ℹ pass 53 / ℹ fail 0（含 S9 的 6 条用例全绿）；旁证 pnpm build BUILD_EXIT=0。"
+    },
+    {
+      "id": 5,
+      "name": "develop...HEAD 至少包含一个 test/spec 文件",
+      "result": "pass",
+      "evidence": "git diff --name-only develop...HEAD => ['docs/drill/S9-test-interception.json', 'test/interception.test.js']；gh pr view chore/S9 => changedFiles=2、additions=294、deletions=0，与本地一致。"
+    },
+    {
+      "id": 6,
+      "name": "验收标准逐条映射到测试名称或内容",
+      "result": "pass",
+      "evidence": "AC1 → 'S9 AC1 an untouched copy passes while the missing-exclamation mutation fails with a non-zero exit'（未变异副本 status=0、变异副本 status≠0）+ 'S9 AC1 the mutated run prints \"not ok\" lines naming the failing unit and CLI cases'（断言 not ok 行点名 US-01 / UT-01 与 US-01 AC1 / E2E-01，且全部符合 ^not ok \\d+ - \\S）+ 'S9 AC1 the drill mutation only strips the \"!\" from the greeting template'（长度恰好 -1）+ 'S9 AC1 the drill record documents a non-zero local \"pnpm test\" run with failing case names'（记录 local.command=pnpm test、exitCode≠0、失败用例名含 UT-01 与 E2E-01）；AC2 → 'S9 AC2 the drill record documents a failed CI \"test\" job whose log contains \"not ok\" lines'（branch=temp/s9*、conclusion=failure、ci.jobName=test、notOkLines 非空且格式合法，并在线回读 run 的 head_branch/head_sha/conclusion 与 test job 失败）；AC3 → 'S9 AC3 baseline CI is green, the temporary branch is gone and the drill commit never reached main'（baseline ref∈{develop,main} 且 conclusion=success 并在线回读 run 匹配、restore.localExitCode=0、branchDeleted=true、mergedIntoMain=false、git ls-remote temp/s9* 为空、compare headSha...main 状态为 diverged/behind）。6 条用例全部通过。"
+    },
+    {
+      "id": 7,
+      "name": "DRY_RUN=false：gh pr view 成功，state=OPEN，baseRefName=develop",
+      "result": "pass",
+      "evidence": "gh pr view chore/S9 --repo tomagoyaky/macos-hello --json state,mergeable,url,baseRefName,headRefOid,changedFiles,additions,deletions => {\"additions\":294,\"baseRefName\":\"develop\",\"changedFiles\":2,\"deletions\":0,\"headRefOid\":\"5810e46b802948d98a681c01fa415275b7ec6b04\",\"mergeable\":\"MERGEABLE\",\"state\":\"OPEN\",\"url\":\"https://github.com/tomagoyaky/macos-hello/pull/22\"}，退出码 0；补充回读 statusCheckRollup 两条 test 检查均 COMPLETED/SUCCESS。"
+    },
+    {
+      "id": 8,
+      "name": "DRY_RUN=true 条件检查（plan 文件与工作区洁净）",
+      "result": "pass",
+      "evidence": "DRY_RUN=false，本项不适用。旁证：git status --porcelain --untracked-files=no 输出为空（已跟踪业务文件零改动）；git status --porcelain 仅有 .claude/、CLAUDE.md、docs/.workflow/、docs/PRD.md、docs/TRD.md、docs/backlog.yml 等既有未跟踪产物，无已跟踪文件被改。"
+    },
+    {
+      "id": 9,
+      "name": "AC1 行为证据：本地重放去感叹号变异",
+      "result": "pass",
+      "evidence": "在 /tmp/s9-gate-drill 复制仓库（含 .git），删除 S9 自身用例与 docs/drill（等价于演练分支 dd4f751 的树 = develop e82a814），将 src/greet.js 的 `Hello, ${name}!` 改为 `Hello, ${name}` 后运行 pnpm test => DRILL_EXIT=1，ℹ tests 47 / ℹ pass 35 / ℹ fail 12，12 条失败用例名与记录 mutation.local.failingCases 完全一致（UT-01/UT-02/UT-03、US-01 AC3 ambient env、E2E-01/02/03/04/07/11/12、S6 AC3）；未变异的本仓库 pnpm test 退出码 0。另核对 dd4f751 与 develop 的 greet.js：演练分支 22 行为 `return `Hello, ${name}`;`，develop/本地为 `return `Hello, ${name}!`;`，恰好少 1 字符。"
+    },
+    {
+      "id": 10,
+      "name": "AC2 行为证据：真实 CI 日志逐行比对",
+      "result": "pass",
+      "evidence": "gh run view 41030609277 --repo tomagoyaky/macos-hello --log 下载真实 job 日志，'test / Run tests' 步骤共 12 条 not ok 行（编号 1,2,4,5,8,12,13,16,17,18,19,32），与记录 mutation.ci.notOkLines 逐条逐字相同；gh api actions/runs/41030609277 => conclusion=failure、head_branch=temp/s9-fail、head_sha=dd4f7510776879b564e9aeeb0751bb6d170e3cd9；jobs => [{\"name\":\"test\",\"conclusion\":\"failure\"}]。gh api compare/e82a814...dd4f751 => ahead_by=1、files=[src/greet.js]，证明演练分支只含该变异。"
+    },
+    {
+      "id": 11,
+      "name": "AC3 行为证据：基线绿、临时分支删除、演练提交未进主干",
+      "result": "pass",
+      "evidence": "gh api actions/runs/41023684797 => conclusion=success、head_branch=develop、head_sha=e82a81457ca116ee58b21c40de5c3dcbfdb1aec5（且为 gh run list --branch develop 的最新一条，develop 远端仍指向 e82a814）；gh api actions/runs/41030609277/jobs 的 test job 失败；git ls-remote --heads origin 'refs/heads/temp/s9*' 输出为空（LSREMOTE_EXIT=0），临时分支已删除；gh api compare/dd4f751...main => status=diverged、ahead_by=2、behind_by=1，gh api compare/dd4f751...develop => status=behind、ahead_by=0，演练提交不在 main 也不在 develop；main 最新 CI run 41026526005 与 develop 最新 CI run 41023684797 均为 success。"
+    }
+  ],
+  "acceptance_mapping": {
+    "AC1": "本地 pnpm test 失败且退出码非 0、输出点名失败用例：测试 'S9 AC1 an untouched copy passes while the missing-exclamation mutation fails with a non-zero exit' / 'S9 AC1 the mutated run prints \"not ok\" lines naming the failing unit and CLI cases' / 'S9 AC1 the drill record documents a non-zero local \"pnpm test\" run with failing case names'；关卡独立重放得 exit=1、47 tests / 35 pass / 12 fail，用例名与记录一致。",
+    "AC2": "CI test job 失败且日志含 not ok 行与用例名：测试 'S9 AC2 the drill record documents a failed CI \"test\" job whose log contains \"not ok\" lines'；关卡用 gh run view 下载 run 41030609277 真实日志，12 条 not ok 行与记录逐字一致。",
+    "AC3": "还原后主干 CI 绿色、演练提交不合入主干：测试 'S9 AC3 baseline CI is green, the temporary branch is gone and the drill commit never reached main'；关卡回读基线与恢复运行、temp/s9* 已删除、compare 显示演练提交与 main/develop 分叉。"
+  },
+  "notes": [
+    "本 Story 为纯演练 chore：实现提交只新增 docs/drill/S9-test-interception.json，无生产代码改动，符合 scope_files/test_files 为空的设定。",
+    "演练分支 dd4f751 的父提交即 develop e82a814，只改 src/greet.js 一个字符；compare e82a814...dd4f751 的 files 仅 [src/greet.js]，因此记录中本地 12 条失败用例（不含 S9 自身用例，因其尚未提交）在结构上自洽，并已由关卡在同树副本中重放复现。",
+    "记录的 baseline 运行 41023684797 发生于演练之前（develop e82a814），说明 develop 全程未被污染、始终为绿；这是比『先红后绿』更干净的证据形态，但也意味着它证明的是分支未被污染而非恢复过程本身。",
+    "本关卡未修改任何业务代码或测试，仅写入 docs/.workflow/story-S9-gate.json 与 docs/.workflow/phase-3.json，并执行 merge-phase-state.sh 更新 state.json。",
+    "非阻塞风险：(1) test/interception.test.js 通过 fetch 与 git ls-remote 依赖 GitHub 网络与 API，本地匿名调用受 60 次/小时限流、离线环境会红；(2) 记录的 CI 日志行由人工摘录，测试本身只校验 run/job 与分支头，需靠关卡/日志下载交叉核对（本次已核对）；(3) 测试对 main 分支存在强依赖，若仓库改用其它主干名需同步修改；(4) main 与 develop 仍分叉（main 含 S8 演练提交 bf0c271/9e5654b），与 S8 遗留风险一致；(5) AC1 的本地证据来自关卡临时副本重放，属一次性验证，不可在 CI 中重复。"
+  ]
+}

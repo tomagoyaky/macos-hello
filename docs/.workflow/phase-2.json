@@ -1,0 +1,46 @@
+{
+  "phase": "2",
+  "status": "pass",
+  "tool_used": [
+    "Bash",
+    "Read",
+    "python3 (yaml.safe_load / json / 正则解析 AC 小节与命令表)",
+    "gh CLI (issue list / label list / api milestones)",
+    "jq",
+    "本机子代理 Reality Checker"
+  ],
+  "commands": [
+    "python3 -c \"import yaml;yaml.safe_load(open('/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/docs/backlog.yml'))\"",
+    "python3 <inline> 解析 bootstrap-plan.json 的 labels/milestones/issues 并统计每条 AC 小节复选框数",
+    "gh issue list --repo \"tomagoyaky/macos-hello\" --label delivery --state all --limit 300 --json number,title,body,milestone,labels",
+    "python3 <inline> 按计划标题逐条比对线上 issue 的标题/正文逐字节一致性/AC 复选框/标签/里程碑",
+    "gh label list --repo tomagoyaky/macos-hello --limit 100",
+    "gh api repos/tomagoyaky/macos-hello/milestones --paginate",
+    "gh issue list --repo tomagoyaky/macos-hello --state all --limit 300 --json number,title,labels",
+    "python3 <inline> 比对 CLAUDE.md 常用命令表与 package.json scripts",
+    "date -u +%Y-%m-%dT%H:%M:%SZ"
+  ],
+  "artifacts": [
+    "/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/docs/.workflow/phase-2.json",
+    "/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/docs/.workflow/state.json",
+    "/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/docs/.workflow/bootstrap-plan.json",
+    "/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/docs/backlog.yml",
+    "/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/CLAUDE.md"
+  ],
+  "gate": {
+    "name": "Phase 2 bootstrap 产物关卡（7 项）",
+    "result": "pass",
+    "evidence": "前置：state.json 存在 phase \"1\" status=\"pass\"，允许进入 Phase 2。1 backlog 可解析 PASS：python3 yaml.safe_load exit=0，topkeys=['project','stories']，stories=10（S1~S10），project={name:macos-hello, repo:tomagoyaky/macos-hello, base_branch:develop}。2 计划文件 PASS：docs/.workflow/bootstrap-plan.json 存在（42858 字节），含 repo/base_branch/labels(4)/milestones(5)/issues(11)/notes(9)。3 数量一致 PASS：计划 issues=11 且实际 delivery issue=11，backlog stories 10 + 1（Dependency Map）=11，三者相等。4 验收条件 PASS：11/11 条 body 均含 '## Acceptance Criteria'，该小节下 '- [ ]' 数量依次为 3,3,4,3,3,3,3,3,3,3,2，全部 ≥2（计划侧数值与实际完全一致）。5 标签与里程碑 PASS：11/11 条均含 delivery 标签；milestone 与计划逐条相同（S1/S2/Dependency Map→M1: 命令可用，S3/S4→M2: 参数支持，S5/S6→M3: 测试就绪，S7/S8→M4: CI 就绪，S9/S10→M5: 交付验收），无一条为空；gh label list 已含 feature/fix/chore/delivery 四个自定义标签，gh api milestones 返回 M1~M5 共 5 个且 state=open。6 CLAUDE.md PASS：文件存在（8300 字节），『常用命令』表与 package.json scripts 完全一致——lint=node --check bin/hello.js、test=node --test、build=node --check bin/hello.js 逐字匹配；dev/typecheck/install 标『未配置』且 scripts 中确无对应键。7 线上对账 PASS：gh issue list --label delivery --state all 返回 11 条（#1~#11），按计划标题逐个比对 11/11 全部命中，无缺失、无多余；每条 body 与计划正文逐字节一致；首行时序标记 S1~S10 + DEPENDENCY-MAP 无重复无缺失。未使用仓库全量 issue 数做对账（实测全量也是 11，仅作旁证）。无门禁失败项；7 项检查全部通过，无降级项。"
+  },
+  "risks": [
+    "分支口径冲突延续自 Phase 1：CLAUDE.md L82 与 backlog S8 要求保护 main 分支 ruleset，但仓库实际基线分支与 package.json 之外的 workflow base_branch 均为 develop；执行 S8 前必须确认，否则门禁保护错分支。",
+    "TRD 6.3 L536 引用未定义的 E2E-13 尚未修复；S6 编写黑盒用例时应以 6.2 表的 E2E-01~E2E-12 为准。",
+    "bin/hello.js 尚未实现（目录树标注『待实现』），lint 与 build 脚本当前必然报错退出（CLAUDE.md L72 已显式声明）；S2 落地前 CI 无法转绿，Phase 3 需按 S1→S2 顺序推进。",
+    "S8 依赖仓库管理员权限与 ruleset 可用性（TRD TR-03），bootstrap 计划已声明不可用时须作为阻塞项上报，不得以人工约定替代。",
+    "里程碑 M3 验收口径在 PRD（US-03 全部）与 TRD（前两条）之间不一致，Dependency Map 与 M3 milestone 描述采用 TRD 口径，验收时可能产生分歧。",
+    "日志采集尚未开始，Phase 2 未生成工作流运行手册 docs/workflow-runbook.md，CLAUDE.md L126 明确『尚未生成时以工作流产物为准』。"
+  ],
+  "next_action": "运行 workflows/03-development.js",
+  "dry_run": false,
+  "timestamp": "2026-10-30T06:44:43Z"
+}

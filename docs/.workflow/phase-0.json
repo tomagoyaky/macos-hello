@@ -1,0 +1,43 @@
+{
+  "phase": "0",
+  "status": "pass",
+  "tool_used": ["Bash", "gh CLI", "claude plugin CLI", "claude mcp CLI", "jq", "yq", "python3"],
+  "commands": [
+    "date -u +%Y-%m-%dT%H:%M:%SZ",
+    "git -C \"/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello\" rev-parse --is-inside-work-tree",
+    "git -C \"/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello\" branch --show-current",
+    "git -C \"/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello\" remote -v",
+    "git -C \"/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello\" remote get-url origin",
+    "gh auth status",
+    "gh repo view \"tomagoyaky/macos-hello\" --json nameWithOwner,defaultBranchRef,visibility,viewerPermission",
+    "claude plugin list",
+    "claude mcp list",
+    "node --version",
+    "pnpm --version",
+    "git --version",
+    "gh --version",
+    "command -v jq && jq --version",
+    "command -v yq && yq --version",
+    "command -v python3 && python3 --version",
+    "curl -sS -o /dev/null -w \"%{http_code} %{time_total}\" --max-time 10 https://api.github.com",
+    "ls -A \"/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello\" | head -50",
+    "test -f \"/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/.claude/settings.json\" && jq -c '.hooks|keys' \"/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/.claude/settings.json\" || true",
+    "git -C \"/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello\" rev-parse --verify \"develop\""
+  ],
+  "artifacts": [
+    "/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/docs/.workflow/phase-0.json",
+    "/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/docs/.workflow/state.json"
+  ],
+  "gate": {
+    "name": "环境预检",
+    "result": "pass",
+    "evidence": "is_repo=true，当前分支 develop；origin=https://github.com/tomagoyaky/macos-hello.git，规范化后 tomagoyaky/macos-hello 与 project.repo 一致；gh 已登录账号 tomagoyaky；gh repo view 返回 visibility=PRIVATE、viewerPermission=ADMIN、默认分支 develop；develop 分支存在（9b53296）；node v25.6.1、pnpm 10.28.2、jq 1.7.1、yq v4.53.3、python3 3.14.3 均可用；api.github.com 返回 200，耗时 1.11s；无 blocker"
+  },
+  "risks": [
+    "pm 已安装但缺少 Notion MCP，Phase 1/2/6 只能走降级路径",
+    "项目 .claude/settings.json 不存在，无项目级 hooks（不影响本阶段）"
+  ],
+  "next_action": "运行 workflows/01-discovery.js",
+  "dry_run": true,
+  "timestamp": "2026-10-30T06:16:43Z"
+}

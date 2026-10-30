@@ -1,0 +1,103 @@
+{
+  "story_id": "S6",
+  "title": "编写 CLI 黑盒验收测试",
+  "status": "pass",
+  "branch": "chore/S6",
+  "base_branch": "develop",
+  "base_sha": "12a4df354741476ac8f63fb4840542214903e4dd",
+  "head_sha": "7c9692b9789358bc504e66bc50900a6d26cf2b2f",
+  "commits": [
+    "7c9692b test(S6): add failing tests for 编写 CLI 黑盒验收测试"
+  ],
+  "pr": {
+    "number": 17,
+    "url": "https://github.com/tomagoyaky/macos-hello/pull/17",
+    "state": "OPEN",
+    "baseRefName": "develop",
+    "mergeable": "MERGEABLE",
+    "headRefOid": "7c9692b9789358bc504e66bc50900a6d26cf2b2f"
+  },
+  "checks": [
+    {
+      "id": 1,
+      "name": "分支名匹配 ^(feature|fix|chore)/",
+      "result": "pass",
+      "evidence": "git rev-parse --abbrev-ref HEAD => chore/S6，grep -Eq '^(feature|fix|chore)/' 命中（BRANCH MATCH）。git rev-parse HEAD => 7c9692b9789358bc504e66bc50900a6d26cf2b2f；git rev-parse origin/chore/S6 => 7c9692b9789358bc504e66bc50900a6d26cf2b2f；gh pr view 17 headRefOid => 7c9692b9789358bc504e66bc50900a6d26cf2b2f，三者一致。git merge-base develop HEAD => 12a4df354741476ac8f63fb4840542214903e4dd。"
+    },
+    {
+      "id": 2,
+      "name": "develop..HEAD 每条提交符合 conventional commits",
+      "result": "pass",
+      "evidence": "git log develop..HEAD --format=%s => 'test(S6): add failing tests for 编写 CLI 黑盒验收测试'（提交总数 1）。逐条按 ^(feat|fix|docs|chore|refactor|test|perf|ci|style)(\\(([^)]+)\\))?: .+ 校验 => MATCH，无不符合项。"
+    },
+    {
+      "id": 3,
+      "name": "存在 test(S6): 提交且早于实现提交",
+      "result": "pass",
+      "evidence": "git log --reverse develop..HEAD --format='%h %s' => 仅一条 7c9692b test(S6): add failing tests for 编写 CLI 黑盒验收测试（2026-10-30 15:44:26 +0800），分支内不存在实现提交。本 Story 为 type=chore 的纯测试补写任务，实现已于 S2~S4 合并入 develop（507c86c feat(cli): 实现默认问候入口 15:11:25、7a1ba3b feat(cli): 实现 --name 正常取值问候 15:19:50、df6702c feat(cli): 非法用法返回 Usage 提示并以退出码 1 结束 15:27:17，均早于 test 提交），故无后续实现提交，「test 提交早于实现提交」按分支内顺序 vacuously 成立（与 S5 同一判定口径）。git show --stat 7c9692b => test/cli.test.js | 188 +++---, 1 file changed, 118 insertions(+), 70 deletions(-)，测试提交未夹带实现；git diff --quiet origin/develop...HEAD -- bin src 退出 0，生产代码与 develop 完全一致。"
+    },
+    {
+      "id": 4,
+      "name": "lint、typecheck、test 全部 exit 0（不存在的跳过并注明）",
+      "result": "pass",
+      "evidence": "package.json scripts = {lint: 'node --check bin/hello.js', test: 'node --test', build: 'node --check bin/hello.js'}；无 typecheck / type-check 脚本（node -e 读取 package.json => '<not configured>'），按规则跳过并注明。pnpm lint => node --check bin/hello.js，LINT_EXIT=0。pnpm test => tests 40 / suites 0 / pass 40 / fail 0 / cancelled 0 / skipped 0 / todo 0 / duration_ms 1306.721，TEST_EXIT=0。"
+    },
+    {
+      "id": 5,
+      "name": "develop...HEAD 至少包含一个 test/spec 文件",
+      "result": "pass",
+      "evidence": "git diff --name-only develop...HEAD => test/cli.test.js（唯一变更文件），与 story.test_files 完全一致，无越界文件；git show --stat 7c9692b 亦仅含 test/cli.test.js。"
+    },
+    {
+      "id": 6,
+      "name": "验收标准逐条映射到测试名称或测试内容",
+      "result": "pass",
+      "evidence": "AC1（spawnSync(process.execPath, [CLI_PATH, ...args]) 运行真实 CLI、覆盖 E2E-01~E2E-12 共 12 条、pnpm test 全部通过）-> test/cli.test.js:19 为 runCli 内的 spawnSync(process.execPath, [CLI_PATH, ...args])，grep -c 命中 1；grep -o 'E2E-[0-9][0-9]' | sort -u => E2E-01 E2E-02 E2E-03 E2E-04 E2E-05 E2E-06 E2E-07 E2E-08 E2E-09 E2E-10 E2E-11 E2E-12，12 条用例一一对应（:73 E2E-01、:77 E2E-02、:98 E2E-03、:102 E2E-04、:114 E2E-05、:118 E2E-06、:122 E2E-07、:126 E2E-08、:130 E2E-09、:134 E2E-10、:138 E2E-11、:150 E2E-12），与 docs/TRD.md 6.2 用例表逐条对齐；pnpm test 40/40、fail 0、exit 0。AC2（默认输出/--name 正常值/--name 缺失取值各至少 1 条，strictEqual 同时比对 stdout 整串含换行、stderr、status）-> E2E-01（:73-75）、E2E-03（:98-100）、E2E-05（:114-116）三类场景齐备；assertGreeting（:42-50）依次 assert.strictEqual(status,0)、stderr===''、stdout===整串（DEFAULT_STDOUT='Hello, World!\\n'，:10），assertUsageError（:57-71）断言 status===1、stdout===''、stderr===USAGE_STDERR（含换行，:11）；全文 assert.strictEqual 出现 18 次，grep 'assert\\.ok|\\.equals(' 零命中。AC3（fileURLToPath(new URL('../bin/hello.js', import.meta.url)) 解析入口、结果与 cwd 无关）-> :9 const CLI_PATH = fileURLToPath(new URL('../bin/hello.js', import.meta.url))；:164-175 专项用例断言 isAbsolute(CLI_PATH) 为 true，并分别在 os.tmpdir() 与仓库根目录运行 CLI，断言输出 strictEqual 一致；另在 /tmp 目录直接执行 node --test <绝对路径>/test/cli.test.js => tests 16 / pass 16 / fail 0，CWD_TEST_EXIT=0，实证与 cwd 无关。"
+    },
+    {
+      "id": 7,
+      "name": "DRY_RUN=false：gh pr view 成功且 state=OPEN、baseRefName=develop",
+      "result": "pass",
+      "evidence": "gh pr view \"chore/S6\" --repo \"tomagoyaky/macos-hello\" --json state,mergeable,url,baseRefName => {\"baseRefName\":\"develop\",\"mergeable\":\"MERGEABLE\",\"state\":\"OPEN\",\"url\":\"https://github.com/tomagoyaky/macos-hello/pull/17\"}，GH_EXIT=0。补充查询 gh pr view 17 --json number,title,changedFiles,additions,deletions,headRefOid => number=17、title='S6: 编写 CLI 黑盒验收测试'、changedFiles=1、additions=118、deletions=70、headRefOid=7c9692b9789358bc504e66bc50900a6d26cf2b2f，与本机 HEAD 及 origin/chore/S6 一致。"
+    },
+    {
+      "id": 8,
+      "name": "DRY_RUN=true 的 plan 文件与工作区洁净检查",
+      "result": "pass",
+      "evidence": "不适用：本次 DRY_RUN=false，该条件性检查未触发。旁证：git status --porcelain 仅 ?? .claude/、?? CLAUDE.md、?? docs/（均为此前即存在的未跟踪工作流产物，非本 Story 产生）；业务文件无脏改动，git diff --quiet origin/develop...HEAD -- bin src 退出 0。"
+    }
+  ],
+  "red_evidence_cross_check": {
+    "result": "confirmed",
+    "detail": "独立复现 TDD 报告的两处变异：1) rsync 仓库（排除 .git）到 /tmp/s6-gate-mut1，把 bin/hello.js 的 process.exitCode = 1 改为 0，node --test test/cli.test.js => tests 16 / pass 9 / fail 7，失败用例恰为 E2E-05、E2E-06、E2E-08、E2E-09、E2E-10、-h、--name -x（7 条），与报告「tests 16 / pass 9 / fail 7」逐一吻合。2) 另建 /tmp/s6-gate-mut2，从 origin/develop 取回 bin/hello.js 后去掉成功路径 stdout 末尾 \\n（process.stdout.write(`${formatGreeting(name)}\\n`) -> 无换行），node --test test/cli.test.js => tests 16 / pass 8 / fail 8，失败用例为 E2E-01、E2E-02、E2E-03、E2E-04、E2E-07、E2E-11、E2E-12 与 S6 AC3 cwd 用例，证明整串（含换行）strictEqual 断言可拦截回归，与报告「共 8 条失败」一致。真实仓库 bin/ 与 src/ 零改动（git diff --stat -- bin src 输出为空）。验证后已删除 /tmp/s6-gate-mut1、/tmp/s6-gate-mut2 临时副本。"
+  },
+  "acceptance": [
+    {
+      "criterion": "test/cli.test.js 使用 spawnSync(process.execPath, [CLI_PATH, ...args]) 运行真实 CLI，覆盖 E2E-01 至 E2E-12 共 12 条用例，pnpm test 全部通过",
+      "result": "pass",
+      "evidence": "runCli 的 spawnSync 调用原文与验收完全一致（:19，grep -c => 1）；E2E-01~E2E-12 各一条、无缺号（:73/:77/:98/:102/:114/:118/:122/:126/:130/:134/:138/:150）；pnpm test => tests 40 / pass 40 / fail 0，exit 0。"
+    },
+    {
+      "criterion": "默认输出、--name 正常值、--name 缺失取值三类必需场景各有至少 1 条用例，且断言使用 strictEqual 对 stdout 整串（含换行）、stderr、status 三者同时比对",
+      "result": "pass",
+      "evidence": "E2E-01（默认输出，期望 'Hello, World!\\n'）、E2E-03（--name Alice，期望 'Hello, Alice!\\n'）、E2E-05（--name 缺失取值，期望 stderr 'Usage: hello [--name <name>]\\n' 且 status 1）三类齐备；assertGreeting/assertUsageError 均以 assert.strictEqual 依次比对 status、stderr、stdout 整串，18 处 strictEqual，无 assert.ok / .equals 弱断言。"
+    },
+    {
+      "criterion": "入口路径通过 fileURLToPath(new URL('../bin/hello.js', import.meta.url)) 解析，测试结果与当前工作目录无关",
+      "result": "pass",
+      "evidence": ":9 原文使用 fileURLToPath(new URL('../bin/hello.js', import.meta.url))；:164-175 专项用例从 os.tmpdir() 与仓库根两个 cwd 运行并断言输出一致；额外在 /tmp 直接运行该测试文件 => 16/16 通过、exit 0，实证 cwd 无关。"
+    }
+  ],
+  "notes": [
+    "用例数为 16 条：E2E-01~E2E-12 共 12 条，另有 4 条守卫用例（S2 node --check 语法检查、S4 -h 与 --name -x 非法用法、S6 AC3 cwd 无关性）。验收只要求覆盖 12 条 E2E，未禁止额外回归用例，与 S5 保留既有用例的门禁口径一致。",
+    "黑盒测试刻意在文件内复制期望字符串（DEFAULT_STDOUT、USAGE_STDERR）而不 import src/greet.js 的 USAGE/DEFAULT_NAME，符合黑盒语义，避免测试与实现常量耦合。",
+    "E2E-12 的 256 字符夹具包含双引号与反斜杠，并先断言 longName.length === 256，转义与长度边界覆盖到位。",
+    "assertUsageError 额外断言 stderr 不含 'ERR_PARSE_ARGS'，防止 Node 内部解析错误文本泄漏到用户界面，属正向加固。",
+    "E2E-02 通过两次独立 spawn 比较输出，未合并为单次调用，真实覆盖「连续执行两次」语义。",
+    "提交描述为英文（'add failing tests for 编写 CLI 黑盒验收测试'），与仓库 CLAUDE.md「提交描述用中文」的约定不完全一致；门禁正则校验通过，仅作后续风格提醒。",
+    "本 Story 为纯测试补写（type=chore），实现已于 S2~S4 合并入 develop；RED 证据以 /tmp 临时副本变异方式独立复现（exitCode 变异 7 红、去换行变异 8 红），真实 bin/src 未被改动。",
+    "环境提示：本机 Node 为 v25.6.1，.nvmrc 钉 20；node --test 行为在两者一致，Node 20 的 CI 覆盖由 S7/S8 负责。",
+    "lint 脚本仍仅 node --check bin/hello.js，未覆盖 test/cli.test.js 本身，静态检查盲区延续。",
+    "PR #17 的 mergeable=MERGEABLE 为查询时快照，且当前无 CI 状态可查，合并前建议复核。"
+  ]
+}

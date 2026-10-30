@@ -1,0 +1,44 @@
+{
+  "phase": "1",
+  "status": "pass",
+  "tool_used": [
+    "Read",
+    "Bash",
+    "python3 (yaml.safe_load / DFS 环检测)",
+    "grep -nE",
+    "gh CLI",
+    "本机子代理 Reality Checker"
+  ],
+  "commands": [
+    "python3 -c \"import yaml;yaml.safe_load(open('/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/docs/backlog.yml'))\"",
+    "python3 <inline> 校验 backlog 必备字段/重复 id/depends_on 悬空与环/prd_refs 并集",
+    "grep -nE 'TBD|待定|酌情|视情况' docs/PRD.md docs/TRD.md docs/backlog.yml",
+    "python3 <inline> 统计每条 US 的 Given/When/Then 条目数与 PRD 第 5 节指标表列数",
+    "grep -nE '^\\| S[0-9]+ \\|' docs/TRD.md",
+    "sed -n '419,432p' docs/TRD.md",
+    "python3 <inline> 比对 TRD 引用的 E2E 编号与 6.2 用例表",
+    "gh repo view tomagoyaky/macos-hello --json defaultBranchRef -q .defaultBranchRef.name"
+  ],
+  "artifacts": [
+    "/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/docs/.workflow/phase-1.json",
+    "/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/docs/.workflow/state.json",
+    "/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/docs/PRD.md",
+    "/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/docs/TRD.md",
+    "/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/docs/backlog.yml"
+  ],
+  "gate": {
+    "name": "Phase 1 文档质量关卡（8 项）",
+    "result": "pass",
+    "evidence": "前置：state.json 中 phase \"0\" status=\"pass\"，允许进入 Phase 1。1 成功指标 PASS：PRD 第 5 节表头为 | 指标 | 基线 | 目标值 | 测量方式 | 数据来源 |，5 行数据均 5 列齐全，基线分别为 无/无/0%/0%/0，目标值均可量化（精确输出+退出码、100% 通过率、最近 10 次推送 CI 10/10、依赖数 0）。2 用户故事 PASS：US-01~US-05 的 Given/When/Then 验收条目分别为 3/4/3/3/3 条，均 ≥2。3 禁用词 PASS：grep -nE 'TBD|待定|酌情|视情况' 对 PRD.md/TRD.md/backlog.yml 零命中（exit=1）。4 backlog PASS：python3 yaml.safe_load 解析成功，10 条故事（S1~S10）均含 id/title/type/acceptance/depends_on，无重复 id，acceptance 各 3~4 条。5 依赖 PASS：depends_on 无悬空（全部指向 S1~S10），DFS 检测无环。6 覆盖 PASS：TRD 4.4 覆盖核对列出目标 1~4 与 US-01~US-05；backlog prd_refs 并集 US-01~US-05 与 PRD 完全一致，无越界引用。7 编号一致 PASS：TRD 4.1 故事总表 S1~S10 与 backlog id S1~S10 一一对应，标题语义一致（如 S8 均为配置主分支合并前状态检查）。8 status 与 gate.result 一致：均为 pass。非门禁风险（不影响本次判定）：TRD L536 引用未定义的 E2E-13（6.2 仅定义 E2E-01~E2E-12）；TRD L59/L114/L303/L391 与 backlog S8 均要求 main 分支 ruleset，但仓库实际默认分支为 develop；PRD L133 M3 完成标准为 US-03 全部通过，TRD L413 改为前两条，第三条移至 M5/S9。"
+  },
+  "risks": [
+    "TRD 6.3 L536 引用 E2E-13，但 6.2 用例表仅定义 E2E-01~E2E-12，属悬空引用；US-05 AC2 实际由 S10 手工步骤覆盖，建议改为 S10 步骤或补定义 E2E-13。",
+    "分支口径冲突：backlog project.base_branch=develop，Phase 0 与 gh 均确认默认分支为 develop；但 TRD 1.3/2.1/3.7 与 backlog S8 要求 main 分支 ruleset。按原文执行 S8 会保护错误分支，Phase 5 前必须统一为 develop。",
+    "里程碑口径偏差：PRD L133 规定 M3 完成标准为 US-03 全部验收标准通过，TRD L413 改为 US-03 前两条，第三条依赖 M5 的 S9；三份文档未显式声明该调整，验收时可能对 M3 是否完成产生分歧。",
+    "PRD US-03 AC1 表述为『已安装开发依赖』，而目标 4 与 S1 要求 devDependencies 为空，措辞与实际零依赖策略不一致（仅表述层面）。",
+    "Phase 0 记录 pm 缺少 Notion MCP，本阶段已走降级路径，不影响文档审查结论。"
+  ],
+  "next_action": "运行 workflows/02-bootstrap.js",
+  "dry_run": false,
+  "timestamp": "2026-10-30T06:30:19Z"
+}

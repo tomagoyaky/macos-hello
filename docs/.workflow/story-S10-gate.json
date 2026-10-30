@@ -1,0 +1,117 @@
+{
+  "story_id": "S10",
+  "title": "端到端验收复跑并核对成功指标",
+  "type": "chore",
+  "milestone": "M5",
+  "status": "pass",
+  "branch": "chore/S10",
+  "base_branch": "develop",
+  "base_sha": "323a5d3518ff4a2954ec35ae8565773e689a67f8",
+  "head_sha": "7591f6de8731c7dbd69eccb414cb521ff8dbe7f9",
+  "commits": [
+    "d97499c test(S10): add failing tests for 端到端验收复跑并核对成功指标",
+    "84b6792 chore(S10): 合并 develop 引入 CI spec 摘要步骤",
+    "239bac0 chore(S10): 合并 develop 的 CI spec 步骤修正",
+    "459e90b chore(S10): 端到端验收复跑并核对成功指标",
+    "7591f6d chore(S10): 验收记录改用本分支 CI 运行证据"
+  ],
+  "pr": {
+    "number": 23,
+    "url": "https://github.com/tomagoyaky/macos-hello/pull/23",
+    "state": "OPEN",
+    "baseRefName": "develop",
+    "mergeable": "MERGEABLE",
+    "headRefOid": "7591f6de8731c7dbd69eccb414cb521ff8dbe7f9",
+    "changedFiles": 2,
+    "additions": 720,
+    "deletions": 0
+  },
+  "checks": [
+    {
+      "id": 1,
+      "name": "分支名匹配 ^(feature|fix|chore)/",
+      "result": "pass",
+      "evidence": "git branch --show-current => chore/S10，命中 ^(feature|fix|chore)/；git rev-parse HEAD 与 git rev-parse origin/chore/S10 均为 7591f6de8731c7dbd69eccb414cb521ff8dbe7f9，本地与远端一致。"
+    },
+    {
+      "id": 2,
+      "name": "develop..HEAD 每条提交符合 conventional commits",
+      "result": "pass",
+      "evidence": "git log develop..HEAD --format=%s 共 5 条：'chore(S10): 验收记录改用本分支 CI 运行证据'、'chore(S10): 端到端验收复跑并核对成功指标'、'chore(S10): 合并 develop 的 CI spec 步骤修正'、'chore(S10): 合并 develop 引入 CI spec 摘要步骤'、'test(S10): add failing tests for 端到端验收复跑并核对成功指标'，逐条匹配 ^(feat|fix|docs|chore|refactor|test|perf|ci|style)(\\([^)]+\\))?: .+，5/5 合规，无 BAD 行。"
+    },
+    {
+      "id": 3,
+      "name": "存在 test(S10): 提交且早于实现提交",
+      "result": "pass",
+      "evidence": "git log --reverse develop..HEAD => d97499c（test(S10)，首条）→ 84b6792/239bac0（同步 develop 的 CI spec 步骤）→ 459e90b（实现，新增验收记录）→ 7591f6d（补充 CI 证据）。git merge-base --is-ancestor d97499c 459e90b 退出码 0；git show --stat d97499c => 仅 test/acceptance.test.js(+560)，459e90b => 仅 docs/acceptance/S10-acceptance.json(+160)，7591f6d => 仅该 JSON 局部改 14 行，测试提交先于实现且未夹带生产代码。"
+    },
+    {
+      "id": 4,
+      "name": "lint、typecheck、test 全部 exit 0（缺失脚本跳过并注明）",
+      "result": "pass",
+      "evidence": "package.json scripts = lint/test/build，无 typecheck（纯 JS 无 tsc），按规则跳过并注明。pnpm lint => LINT_EXIT=0。pnpm test 在文档要求的环境（CLAUDE.md：GH_TOKEN 为本地脚本调用 GitHub API 的凭据）下，export GH_TOKEN=\"$(gh auth token)\" 后运行 => AUTHED_TEST_EXIT=0，ℹ tests 65 / ℹ pass 65 / ℹ fail 0；node --test test/acceptance.test.js 单跑 => 8 tests / 8 pass / 0 fail。如实记录：未导出 GH_TOKEN 的裸 `pnpm test` 首次运行 TEST_EXIT=1，ℹ tests 65 / ℹ pass 58 / ℹ fail 7（S8/S9/S10 共 7 条实时 GitHub API 用例因 api.github.com 返回 403 rate limit 失败），属匿名配额耗尽的环境因素，非本 Story 代码缺陷；重试与 CI 均绿，但该依赖已列入风险。"
+    },
+    {
+      "id": 5,
+      "name": "develop...HEAD 至少包含一个 test/spec 文件",
+      "result": "pass",
+      "evidence": "git diff --name-only develop...HEAD => ['docs/acceptance/S10-acceptance.json', 'test/acceptance.test.js']；git diff --stat develop...HEAD => 2 files changed, 720 insertions(+)，与 PR changedFiles=2/additions=720/deletions=0 一致。"
+    },
+    {
+      "id": 6,
+      "name": "验收标准逐条映射到测试名称或内容",
+      "result": "pass",
+      "evidence": "AC1 → 'S10 AC1 a fresh clone runs before any install and installs with \"pnpm install --frozen-lockfile\"'（未装包即可运行 + frozen-lockfile 退出 0）、'S10 AC1 the fresh clone prints exactly \"Hello, World!\\\\n\" three times with exit 0 and empty stderr'、'S10 AC1 the fresh clone matches PRD US-02 for --name Alice, --name with a space and missing --name'；AC2 → 'S10 AC2 the core suite reports zero failures and covers default output, \"--name\" value and \"--name\" missing value'（E2E-01/03/05、UT-01/05/09）、'S10 AC2 the acceptance record reports zero failures locally and in CI with matching summaries and case coverage'（三类覆盖 E2E-01/E2E-03/E2E-05 等）；AC3 → 'S10 AC3 the acceptance record documents the Node.js 20.x clean clone, install and four PRD scenarios'、'S10 AC3 the acceptance record lists the five PRD success metrics with passing evidence'、'S10 AC3 the recorded CI runs resolve to successful \"CI\" workflow runs with a green \"test\" job'。三条验收标准均有 ≥1 条可执行断言覆盖。"
+    },
+    {
+      "id": 7,
+      "name": "DRY_RUN=false：gh pr view 成功，state=OPEN，baseRefName=develop",
+      "result": "pass",
+      "evidence": "gh pr view \"chore/S10\" --repo \"tomagoyaky/macos-hello\" --json state,mergeable,url,baseRefName => {\"baseRefName\":\"develop\",\"mergeable\":\"MERGEABLE\",\"state\":\"OPEN\",\"url\":\"https://github.com/tomagoyaky/macos-hello/pull/23\"}，GH_EXIT=0；扩展读取 number=23、headRefOid=7591f6d…、statusCheckRollup 两项 test 均 SUCCESS。"
+    },
+    {
+      "id": 8,
+      "name": "DRY_RUN=true 条件检查（本次 DRY_RUN=false，跳过）",
+      "result": "pass",
+      "evidence": "DRY_RUN=false，按规则不执行 plan 文件与工作区洁净度专项检查；工作区 git status --porcelain 仅见既有未跟踪产物 .claude/、CLAUDE.md、docs/.workflow/、docs/PRD.md、docs/TRD.md、docs/backlog.yml，无已跟踪文件改动。"
+    },
+    {
+      "id": 9,
+      "name": "AC1 独立复验：临时目录克隆 + Node.js 20.x + frozen-lockfile + PRD 场景命令",
+      "result": "pass",
+      "evidence": "关卡自建 /tmp/s10-gate-XXXX 副本：git clone --no-hardlinks 本地仓库后在克隆内用 /Users/neolix/.nvm/versions/node/v20.20.2/bin/node（v20.20.2，record.environment.nodePath 真实存在）执行：node bin/hello.js => 'Hello, World!' CLI_EXIT=0；node bin/hello.js --name Alice => 'Hello, Alice!' ALICE_EXIT=0；pnpm install --frozen-lockfile => INSTALL_EXIT=0。测试侧 runFreshCloneAcceptance 还断言克隆前无 node_modules、stderr 为空、连续 3 次输出一致、--name \"Wu Ming\" 与缺失取值（exit 1 + 精确 Usage 行）符合 PRD US-02。"
+    },
+    {
+      "id": 10,
+      "name": "AC2 独立复验：本地零失败、三类场景覆盖、与 CI 日志一致",
+      "result": "pass",
+      "evidence": "本地（GH_TOKEN 已导出）pnpm test => 65 tests / 65 pass / 0 fail，与记录 testSuite.local.summaryLines 完全一致；gh run view 41034420760 --log（chore/S10@459e90b push）spec 步骤 => 'ℹ tests 65 / ℹ pass 65 / ℹ fail 0'，TAP 步骤 => '# tests 65 / # pass 65 / # fail 0'，与记录 testSuite.ci 逐行一致；head 运行 41034639152（@7591f6d）spec 摘要同为 65/65/0；三类覆盖在 core suite TAP 中确认 E2E-01/E2E-03/E2E-05 均 ok。"
+    },
+    {
+      "id": 11,
+      "name": "AC3 独立复验：五项成功指标逐项核对并留存证据",
+      "result": "pass",
+      "evidence": "记录 metrics=M1..M5 顺序齐全且 status=pass：M1/M2 由关卡克隆实跑复核（Hello, World! / Hello, Alice!，exit 0）；M3 fail=0 且 coverage defaultOutput=6/nameValue=7/nameMissingValue=4；M5 pnpm list --prod --depth 0 --json => 仅项目自身元数据、无 dependencies 条目（LIST_EXIT=0）；M4 gh run list --branch main --event push --limit 10 => 41026526005、41023836794 两条均 conclusion=success（main 目前全部 push 运行即 2 条），SC3/testSuite.ci 指向的 41034420760 经 gh api 复核 name=CI、event=push、head_branch=chore/S10、conclusion=success，test job conclusion=success。"
+    },
+    {
+      "id": 12,
+      "name": "验收记录与仓库事实一致性交叉核对",
+      "result": "pass",
+      "evidence": "record.environment.node=v20.20.2 且 nodePath 存在可执行；record.environment.pnpm=10.28.2 与 packageManager 一致；record.clone.commitSha=459e90b 为完整 40 位 sha，该提交真实存在且对应绿色 CI 运行 41034420760；record.testSuite.ci.assertEqual 65 与真实日志一致；record.scenarios 顺序 SC1..SC4、SC3 为 CI 类型、SC4 sameAsCi=true；未发现记录引用不存在的 run、分支或不符的计数。提交层面无生产代码改动，diff 仅测试与验收记录。"
+    }
+  ],
+  "acceptance_mapping": {
+    "AC1": "在临时目录全新克隆，Node.js 20.x + pnpm install --frozen-lockfile，逐条复跑 PRD 第 3 节场景且输出符合第 4 节：测试 'S10 AC1 a fresh clone runs before any install and installs with \"pnpm install --frozen-lockfile\"'、'S10 AC1 the fresh clone prints exactly \"Hello, World!\\\\n\" three times with exit 0 and empty stderr'、'S10 AC1 the fresh clone matches PRD US-02 for --name Alice, --name with a space and missing --name'；关卡另用 v20.20.2 在 /tmp 新克隆独立重放，输出与退出码一致。",
+    "AC2": "pnpm test 失败数 0，默认输出/--name 正常值/--name 缺失取值三类各有用例，本地与 CI 日志一致：测试 'S10 AC2 the core suite reports zero failures and covers default output, \"--name\" value and \"--name\" missing value' 与 'S10 AC2 the acceptance record reports zero failures locally and in CI with matching summaries and case coverage'；关卡实测本地 65/65/0，CI 41034420760 与 41034639152 均为 65/65/0。",
+    "AC3": "PRD 第 5 节五项成功指标逐项核对并留存证据（命令输出、CI 运行链接）：测试 'S10 AC3 the acceptance record documents the Node.js 20.x clean clone, install and four PRD scenarios'、'S10 AC3 the acceptance record lists the five PRD success metrics with passing evidence'、'S10 AC3 the recorded CI runs resolve to successful \"CI\" workflow runs with a green \"test\" job'；关卡逐条复核 M1~M5 与 run 链接可解析、结论 success。"
+  },
+  "notes": [
+    "关卡结论：8 项规定检查 + 4 项独立行为复验全部通过，0 项失败；status=pass，可进入 S10 合并流程。",
+    "TDD RED 证据核对：d97499c 的 8 条用例中 4 条验收记录契约用例因 docs/acceptance/S10-acceptance.json 不存在而失败，4 条行为用例（克隆、安装、CLI 输出、核心套件）在 RED 时即可通过，与 test-first 报告（65 tests / 61 pass / 4 fail）自洽；实现提交仅新增记录 JSON，未改生产代码。",
+    "风险（不阻断）：pnpm test 含 7 条实时 GitHub API 用例（S8/S9/S10），匿名调用受 60 次/小时配额限制；关卡在未导出 GH_TOKEN 时实测 403 导致 TEST_EXIT=1。建议在 ci.yml 的测试步骤注入 GH_TOKEN/GITHUB_TOKEN（并确认 ruleset 读取权限），或在 README 明确本地跑测试前 export GH_TOKEN。",
+    "风险（不阻断）：PRD M4 定义为『主分支最近 10 次推送 CI 成功率 100%』，而 main 目前仅有 2 条 push 运行（41026526005、41023836794，均 success），记录以 2/2=100% 落账且未在记录正文写明『全量仅 2 条』；建议后续 main 累积到 10 条后复跑该指标或把口径写进记录。",
+    "说明：record.clone.commitSha=459e90b 早于分支 head 7591f6d；后续提交仅将 SC3/ci 证据从 57 用例的旧运行改指向本分支 65 用例的绿色运行 41034420760，并同步 verifiedAt/克隆目录与 M1/M2/M3 证据路径，CLI 与测试代码未变；head 运行 41034639152 同样绿色，结论不受影响。",
+    "说明：S10 的克隆复跑在测试内针对本地已提交树（git clone ROOT），远端推送真实性由 PR #23 headRefOid=7591f6d 与两次远程 CI 运行佐证；映射文件中未包含生产源码与既有用例的改写。",
+    "工作区既有未跟踪产物（.claude/、CLAUDE.md、docs/PRD.md、docs/TRD.md、docs/backlog.yml、docs/.workflow/）为工作流上下文，未纳入本 Story 提交。"
+  ]
+}

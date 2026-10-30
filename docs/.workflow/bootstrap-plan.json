@@ -1,0 +1,170 @@
+{
+  "repo": "tomagoyaky/macos-hello",
+  "base_branch": "develop",
+  "labels": [
+    {
+      "name": "feature",
+      "color": "1D76DB",
+      "description": "新功能与用户可见能力（对应 backlog type: feature）"
+    },
+    {
+      "name": "fix",
+      "color": "D73A4A",
+      "description": "缺陷修复与回归修正（对应 backlog type: fix）"
+    },
+    {
+      "name": "chore",
+      "color": "6E7781",
+      "description": "维护类工作：脚手架、测试、文档、CI 与仓库配置（对应 backlog type: chore）"
+    },
+    {
+      "name": "delivery",
+      "color": "0E8A16",
+      "description": "交付流程跟踪标签，bootstrap 生成的每条 issue 均携带"
+    }
+  ],
+  "milestones": [
+    {
+      "title": "M1: 命令可用",
+      "description": "范围：S1 零依赖项目骨架校验、S2 默认问候入口。完成标准：US-01 全部验收标准通过；`node bin/hello.js` 标准输出恰为 `Hello, World!` 加一个换行符，标准错误为空、退出码 0，连续两次执行逐字节一致；package.json 四类依赖字段均为空。预估工期 0.5 人日。"
+    },
+    {
+      "title": "M2: 参数支持",
+      "description": "范围：S3 `--name` 正常取值、S4 非法用法与退出码。完成标准：US-02 全部验收标准通过；`--name Alice`、`--name \"Wu Ming\"`、`--name=Alice` 与 256 字符取值均原样输出；缺失取值、空字符串、未知选项、位置参数、歧义取值一律 stdout 为空、stderr 恰为 `Usage: hello [--name <name>]` 加一个换行符、退出码 1。预估工期 0.5 人日。"
+    },
+    {
+      "title": "M3: 测试就绪",
+      "description": "范围：S5 核心函数单元测试（UT-01~UT-14）、S6 CLI 黑盒验收测试（E2E-01~E2E-12）。完成标准：US-03 前两条验收标准通过；`pnpm test` 失败数为 0、退出码 0；默认输出、`--name` 正常值、`--name` 缺失取值三类场景各有至少 1 条用例。预估工期 0.5 人日。"
+    },
+    {
+      "title": "M4: CI 就绪",
+      "description": "范围：S7 GitHub Actions 测试工作流、S8 主分支合并门禁。完成标准：US-04 全部验收标准通过；推送与拉取请求触发 `test` job，在 Node.js 20.x 上执行 `pnpm install --frozen-lockfile` 与 `pnpm test` 全绿，日志含 `runtime dependencies: 0`；ruleset 要求 PR 合并与必需状态检查 `test`，CI 未通过时 PR 不可合并。预估工期 0.5 人日。"
+    },
+    {
+      "title": "M5: 交付验收",
+      "description": "范围：S9 测试拦截回归演练、S10 端到端验收复跑。完成标准：US-03 第三条通过（变异后本地测试失败且能定位用例）；PRD 第 5 节五项成功指标全部达标；干净克隆复跑结果与 CI 日志一致；主分支保持绿色，演练改动不合入主干。预估工期 0.5 人日。"
+    }
+  ],
+  "issues": [
+    {
+      "story_id": "S1",
+      "title": "S1: 校验零依赖项目骨架并补齐 Node 版本与使用说明",
+      "labels": [
+        "chore",
+        "delivery"
+      ],
+      "milestone": "M1: 命令可用",
+      "body": "<!-- story:S1 -->\n## Story\n**S1: 校验零依赖项目骨架并补齐 Node 版本与使用说明**（type: chore · milestone: M1: 命令可用 · PRD: US-05）\n\n作为维护者，我想成品不包含任何第三方运行时依赖，以便降低安装成本和安全风险面。本故事同时补齐 Node 版本与使用说明，为 S2 的入口实现提供可复现基线。\n\n## Context\n- 现状基线：仓库已提交 `package.json`、`pnpm-lock.yaml`、`.gitignore`、`README.md`；`bin/`、`src/`、`test/`、`.github/` 尚不存在（见 TRD「现状基线」）。\n- `package.json` 已声明 `private: true`、`type: module`、`bin.hello`、`engines.node >= 20`、`packageManager pnpm@10.28.2` 与 `test: node --test`；缺少 `.nvmrc`，README 未写支持范围、pnpm 安装方式与三条使用命令。\n- 约束：运行时与开发期均为零第三方依赖（TRD 1.5、3.5）；Node 20 已结束维护（TR-01），本期仍按 PRD 固定 20.x。\n- 参考：PRD §4 US-05、§5「运行时第三方依赖数」指标；TRD §3.5 包清单与脚本契约、§4.2 S1。\n\n## Acceptance Criteria\n- [ ] package.json 的 dependencies、devDependencies、optionalDependencies、peerDependencies 四类字段均未声明或为空对象，pnpm list --prod --depth 0 输出条目数为 0\n- [ ] package.json 保持 private: true、type: module、bin.hello 指向 ./bin/hello.js、engines.node >= 20、packageManager pnpm@10.28.2 与 test 脚本，且 node -e 读取上述字段逐一校验通过\n- [ ] 新增 .nvmrc 内容为 20；README.md 补充支持范围（macOS + Node.js 20.x）、pnpm 10.28.2 安装方式与三条使用命令；pnpm-lock.yaml 与 .gitignore 已提交\n\n## Definition of Done\n- [ ] 先写失败测试并提交（红态：版本一致性检查脚本因 `.nvmrc` 缺失而失败，输出已归档）\n- [ ] 实现让测试通过（补齐 `.nvmrc` 与 README 后，版本一致性检查与 package.json 字段校验全部转绿）\n- [ ] 全量测试通过无回归：`pnpm test` 失败数为 0、退出码为 0（本阶段无测试文件时以 `node --test` 空跑正常退出为准）\n- [ ] 无注释掉的代码与硬编码值\n- [ ] 通过 PR 合并后关闭 issue\n\n## Dependencies\n- Blocked by: None\n- Blocks: S2\n\n## Technical Details\n- 依赖四类字段校验：`pnpm list --prod --depth 0`；另用 `node -e` 脚本遍历 dependencies/devDependencies/optionalDependencies/peerDependencies，任一非空即非零退出。\n- 字段逐一校验：`private === true`、`type === 'module'`、`bin.hello === './bin/hello.js'`、`engines.node === '>=20'`、`packageManager === 'pnpm@10.28.2'`、`scripts.test === 'node --test'`。\n- `.nvmrc` 内容仅一行 `20`，与 CI 的 `20.x` 对齐（TRD TR-02）。\n- README 必含：支持范围（macOS + Node.js 20.x）、pnpm 10.28.2 安装方式（Node 25 已移除 corepack，需给出 `npm install -g pnpm@10.28.2` 或 corepack 等价路径）、三条使用命令（`node bin/hello.js`、`node bin/hello.js --name Alice`、`pnpm test`）。\n- test_first 红态脚本：读取 `.nvmrc` 主版本与 `node --version` 主版本比对，不一致或文件缺失即非零退出；改动前必然失败，补齐后转绿。\n- `pnpm-lock.yaml` 与 `.gitignore` 已存在，仅确认已提交（`git ls-files` 可见），本故事不新增任何依赖。\n- 本故事不创建 `bin/hello.js` / `src/greet.js`，入口实现属于 S2。\n\n## Files\n**Creates**\n- `.nvmrc`\n\n**Modifies**\n- `package.json`\n- `README.md`\n- `pnpm-lock.yaml`"
+    },
+    {
+      "story_id": "S2",
+      "title": "S2: 实现默认问候入口",
+      "labels": [
+        "feature",
+        "delivery"
+      ],
+      "milestone": "M1: 命令可用",
+      "body": "<!-- story:S2 -->\n## Story\n**S2: 实现默认问候入口**（type: feature · milestone: M1: 命令可用 · PRD: US-01）\n\n作为 macOS 开发者，我想执行一条命令就得到 Hello World 输出，以便快速确认本机环境和交付物可用。\n\n## Context\n- 本故事建立 CLI 适配层与纯函数核心的最小骨架：`bin/hello.js` 是唯一允许触碰 `process` 的文件；`src/greet.js` 只放纯函数（TRD 1.2、1.5）。\n- 当前仓库不存在 `bin/` 与 `src/`，执行 `node bin/hello.js` 会报模块找不到，这就是红态基线。\n- 输出契约：成功路径 stdout 恰为 `Hello, World!` 加一个换行符，stderr 为空，退出码 0；连续执行结果逐字节一致（TRD 3.3、决策 D1）。\n- 参考：PRD §4 US-01、§6 M1；TRD §3.4 模块接口、§4.2 S2。\n\n## Acceptance Criteria\n- [ ] node bin/hello.js 的标准输出恰为 Hello, World! 加且仅加一个换行符，标准错误为空，退出码为 0\n- [ ] 同一命令连续执行两次，两次标准输出逐字节一致（cmp 或 od -c 字节比对无差异）\n- [ ] node --check bin/hello.js 通过；src/greet.js 中 formatGreeting 为纯函数，不读取 process、环境变量、时钟或随机数\n\n## Definition of Done\n- [ ] 先写失败测试并提交（红态：执行 `node bin/hello.js` 失败，错误输出已记录）\n- [ ] 实现让测试通过（精确字节断言、两次执行一致性、`node --check` 全部转绿）\n- [ ] 全量测试通过无回归：`pnpm test` 失败数为 0、退出码为 0\n- [ ] 无注释掉的代码与硬编码值（`DEFAULT_NAME` 与 `USAGE` 属于 TRD 3.1 定义的契约常量）\n- [ ] 通过 PR 合并后关闭 issue\n\n## Dependencies\n- Blocked by: S1\n- Blocks: S3\n\n## Technical Details\n- `src/greet.js` 导出：`DEFAULT_NAME = 'World'`、`USAGE = 'Usage: hello [--name <name>]'`、`formatGreeting(name = DEFAULT_NAME)`，返回 `Hello, <name>!`；输出模板只允许存在这一处（TRD 1.5）。\n- `bin/hello.js` 首行 shebang `#!/usr/bin/env node`，从 `../src/greet.js` 导入；用 `process.stdout.write(formatGreeting() + '\\n')` 写出单行文本，结尾不附加任何内容。\n- 红线：不使用 `console.log`（隐式换行不可控）与 `process.exit`（会截断管道输出），退出码统一用 `process.exitCode`（TRD 2.2、决策 D11）。\n- `parseCliArgs` 与 `UsageError` 在 S3/S4 引入，本故事不预留空实现，保持最小代码面。\n- test_first：\n  1. 执行 `node bin/hello.js`，记录 `MODULE_NOT_FOUND`（或等价错误）作为红态证据；\n  2. `printf 'Hello, World!\\n' > /tmp/hello.expected` 生成字节基准，实现后 `node bin/hello.js > /tmp/hello.actual && cmp /tmp/hello.expected /tmp/hello.actual`；\n  3. 连续执行两次并 `cmp` 两个输出文件，验证逐字节一致；\n  4. `node --check bin/hello.js` 做语法预检。\n- 本故事不处理参数；参数行为由 S3/S4 定义，任何参数输入不在 S2 验收范围。\n\n## Files\n**Creates**\n- `bin/hello.js`\n- `src/greet.js`\n\n**Modifies**\n- None"
+    },
+    {
+      "story_id": "S3",
+      "title": "S3: 实现 --name 正常取值问候",
+      "labels": [
+        "feature",
+        "delivery"
+      ],
+      "milestone": "M2: 参数支持",
+      "body": "<!-- story:S3 -->\n## Story\n**S3: 实现 --name 正常取值问候**（type: feature · milestone: M2: 参数支持 · PRD: US-02）\n\n作为 macOS 开发者，我想用 `--name` 指定问候对象，以便演示参数解析并生成个性化输出。\n\n## Context\n- S2 已提供默认问候；本故事在既有入口上接入 `node:util.parseArgs`（strict 模式、禁止位置参数），把 `--name Alice`、`--name \"Wu Ming\"`、`--name=Alice` 统一到同一条纯函数解析路径（TRD 3.2 决策 D6、3.4）。\n- 当前带 `--name` 执行仍输出默认问候，内联形式未被支持，两者均为红态。\n- 取值原样拼接：不去空格、不转义、不修改大小写、不限制长度（TRD 决策 D8、PRD Q8）。\n- 参考：PRD §4 US-02、§6 M2；TRD §3.2、§3.3、§4.2 S3；测试用例 UT-04~UT-07 与 E2E-03/04/07/11/12。\n\n## Acceptance Criteria\n- [ ] node bin/hello.js --name Alice 输出 Hello, Alice! 加一个换行符，标准错误为空，退出码为 0\n- [ ] node bin/hello.js --name \"Wu Ming\" 输出 Hello, Wu Ming! 加一个换行符；--name=Alice 与 --name Alice 输出完全一致\n- [ ] 不传 --name 时输出仍为 Hello, World! 加一个换行符，行为与 S2 的验收结果一致\n- [ ] 传入 256 字符长度的 --name 取值时原样输出，不截断、不转义、不修改大小写\n\n## Definition of Done\n- [ ] 先写失败测试并提交（红态：带 `--name` 的命令仍输出默认问候、内联形式不被支持，stdout/stderr/退出码已记录）\n- [ ] 实现让测试通过（正常值、含空格、内联、256 字符四类取值全部输出精确结果）\n- [ ] 全量测试通过无回归：`pnpm test` 失败数为 0、退出码为 0\n- [ ] 无注释掉的代码与硬编码值（输出模板仍只存在于 `formatGreeting`）\n- [ ] 通过 PR 合并后关闭 issue\n\n## Dependencies\n- Blocked by: S2\n- Blocks: S4\n\n## Technical Details\n- `parseCliArgs(argv)` 输入纯字符串数组，返回 `{ name }` 或 `{}`；不读取 `process`，失败时抛 `UsageError`（完整错误包装在 S4 收敛，本故事先让合法路径工作）。\n- 使用 `parseArgs({ args: argv, options: { name: { type: 'string' } }, strict: true, allowPositionals: false })`；`--name=Alice` 由内置解析器原生支持（D6）。\n- 重复 `--name` 以最后一次为准（D5，parseArgs 默认语义）；空字符串拦截在 S4 实现，本故事只保证非空正常值。\n- `bin/hello.js` 改为 `parseCliArgs(process.argv.slice(2))` 后调用 `formatGreeting(name)`，未提供时仍走默认值。\n- test_first：\n  1. 先运行 `node bin/hello.js --name Alice` 与 `node bin/hello.js --name \"Wu Ming\"`，记录仍输出 `Hello, World!`（红态）与 stdout/stderr/退出码；\n  2. 先运行 `node bin/hello.js --name=Alice`，确认内联形式当前未被支持；\n  3. 记录合法路径基线（无参数、`--name Alice`），供 S4 改造错误分支时做回归比对。\n- 256 字符验证：`node bin/hello.js --name \"$(printf 'a%.0s' {1..256})\"`，断言输出为 `Hello, ` + 256 个 a + `!` 加换行。\n- 不实现 `--help`、短选项或多参数组合，避免范围蔓延（PRD 风险表）。\n\n## Files\n**Creates**\n- None\n\n**Modifies**\n- `src/greet.js`\n- `bin/hello.js`"
+    },
+    {
+      "story_id": "S4",
+      "title": "S4: 非法用法返回 Usage 提示并以退出码 1 结束",
+      "labels": [
+        "feature",
+        "delivery"
+      ],
+      "milestone": "M2: 参数支持",
+      "body": "<!-- story:S4 -->\n## Story\n**S4: 非法用法返回 Usage 提示并以退出码 1 结束**（type: feature · milestone: M2: 参数支持 · PRD: US-02）\n\n作为 macOS 开发者，我想在参数不合法时看到统一的用法提示并以非 0 退出，以便立即发现命令用错，而不是误以为执行成功。\n\n## Context\n- S3 已让合法 `--name` 路径工作；本故事统一错误分支：缺失取值、空字符串、未知长/短选项、位置参数、歧义取值全部收敛为 `UsageError`（TRD 3.2 决策 D2/D3/D4/D7、3.8）。\n- 当前 `--name` 缺失取值会由 `parseArgs` 抛出 Node 内置英文错误（`ERR_PARSE_ARGS_*`），既不统一也不适合直接展示，这是红态。\n- 错误契约：stdout 为空；stderr 恰为 `Usage: hello [--name <name>]` 加一个换行符；退出码 1（TRD 3.3）。\n- 参考：PRD Q2/Q3/Q4/Q5、§4 US-02；TRD §3.2、§3.3、§3.8；用例 E2E-05/06/08/09/10、UT-08~UT-13。\n\n## Acceptance Criteria\n- [ ] node bin/hello.js --name 与 node bin/hello.js --name \"\" 时标准输出为空，标准错误恰为 Usage: hello [--name <name>] 加一个换行符，退出码为 1\n- [ ] 未知选项 --foo、--help、-h，位置参数 extra，以及歧义取值 --name -x 均输出同一 Usage 文案并以退出码 1 结束\n- [ ] 所有参数解析异常统一包装为 UsageError，标准错误中不出现 Node 内置的 ERR_PARSE_ARGS 英文原文\n\n## Definition of Done\n- [ ] 先写失败测试并提交（红态：逐个执行非法用法命令，当前无 Usage 文案或退出码不为 1，输出已记录）\n- [ ] 实现让测试通过（同一脚本复跑，全部非法用法输出精确的 Usage 与退出码 1）\n- [ ] 全量测试通过无回归：`pnpm test` 失败数为 0、退出码为 0（合法命令仍为 stdout 精确输出、stderr 为空、退出码 0）\n- [ ] 无注释掉的代码与硬编码值（`USAGE` 为 TRD 3.1 定义的契约常量）\n- [ ] 通过 PR 合并后关闭 issue\n\n## Dependencies\n- Blocked by: S3\n- Blocks: S5\n\n## Technical Details\n- `UsageError extends Error`，`name = 'UsageError'`，默认 message 为 `USAGE`；`parseCliArgs` 内 try/catch 捕获所有 `ERR_PARSE_ARGS_*` 后抛出 `UsageError`，不向调用方泄露内置文案。\n- 空字符串拦截在解析成功后显式判断：`if (name !== undefined && name.length === 0) throw new UsageError()`；仅由空格组成的非空值是合法取值（D8）。\n- `bin/hello.js` 错误分支：捕获后若 `error instanceof UsageError`，执行 `process.stderr.write(USAGE + '\\n')` 并设 `process.exitCode = 1`；其他异常重新抛出，不得吞掉。\n- `--help`、`-h` 不提供帮助行为，按未知选项处理（D4）；位置参数由 `allowPositionals: false` 抛错后包装。\n- test_first（红态→绿态复用同一脚本）：\n  1. 逐个执行 `--name`、`--name \"\"`、`--foo`、`--help`、`-h`、`extra`、`--name -x`，记录 stdout/stderr/退出码，确认当前不满足契约；\n  2. 先跑合法命令 `node bin/hello.js` 与 `node bin/hello.js --name Alice`，确认退出码 0、stderr 为空，作为错误分支改造的回归基线；\n  3. 实现后按同一脚本复跑，逐条比对。\n- 退出码统一用 `process.exitCode`，确保 stdout/stderr 已刷新（D11）；不得用 `process.exit`。\n- 错误信息只输出固定 `USAGE`，不拼接具体原因，保证 stdout/stderr 可精确断言。\n\n## Files\n**Creates**\n- None\n\n**Modifies**\n- `src/greet.js`\n- `bin/hello.js`"
+    },
+    {
+      "story_id": "S5",
+      "title": "S5: 编写核心函数单元测试",
+      "labels": [
+        "chore",
+        "delivery"
+      ],
+      "milestone": "M3: 测试就绪",
+      "body": "<!-- story:S5 -->\n## Story\n**S5: 编写核心函数单元测试**（type: chore · milestone: M3: 测试就绪 · PRD: US-03）\n\n作为开发者，我想用一条命令运行核心函数单元测试，以便在后续改动中快速发现纯函数契约的回归。\n\n## Context\n- M2 结束时 `src/greet.js` 的 `formatGreeting`、`parseCliArgs`、`UsageError` 行为已冻结；本故事用 `node:test` + `node:assert/strict` 建立 14 条单元用例（UT-01~UT-14），直接 import 模块，不创建子进程（TRD 6.1、6.2）。\n- 仓库当前没有任何测试文件，`pnpm test` 只做空跑；本故事建立 `test/greet.test.js` 作为测试基线。\n- 参考：PRD §4 US-03；TRD §6.2 UT 清单、§6.6 测试执行约定、§4.2 S5。\n\n## Acceptance Criteria\n- [ ] test/greet.test.js 覆盖 UT-01 至 UT-14 共 14 条用例，直接 import src/greet.js，不创建子进程；pnpm test 失败数为 0 且退出码为 0\n- [ ] 异常路径用例（空字符串取值、缺失取值、未知选项、--help、位置参数、歧义取值）各至少 1 条，并断言抛出 UsageError\n- [ ] 用例名称包含 US 编号前缀，TAP 输出中可直接定位到具体用例名\n\n## Definition of Done\n- [ ] 先写失败测试并提交（红态：先写 UT-08/UT-09 后临时移除实现中的空值拦截，确认用例失败并指出用例名，随后还原）\n- [ ] 实现让测试通过（14 条用例全部 ok，`pnpm test` 失败数为 0）\n- [ ] 全量测试通过无回归：`pnpm test` 失败数为 0、退出码为 0\n- [ ] 无注释掉的代码与硬编码值（测试期望字符串与契约常量一致）\n- [ ] 通过 PR 合并后关闭 issue\n\n## Dependencies\n- Blocked by: S4\n- Blocks: S6\n\n## Technical Details\n- 用例清单（TRD 6.2）：\n  - UT-01 `formatGreeting()` → `Hello, World!`\n  - UT-02 `formatGreeting('Alice')` → `Hello, Alice!`\n  - UT-03 `formatGreeting('Wu Ming')` → `Hello, Wu Ming!`\n  - UT-04 `parseCliArgs([])` → `{}`\n  - UT-05 `parseCliArgs(['--name', 'Alice'])` → `{ name: 'Alice' }`\n  - UT-06 `parseCliArgs(['--name=Alice'])` → `{ name: 'Alice' }`\n  - UT-07 `parseCliArgs(['--name', 'Wu Ming'])` → `{ name: 'Wu Ming' }`\n  - UT-08 `parseCliArgs(['--name', ''])` → 抛 `UsageError`\n  - UT-09 `parseCliArgs(['--name'])` → 抛 `UsageError`\n  - UT-10 `parseCliArgs(['--foo'])` → 抛 `UsageError`\n  - UT-11 `parseCliArgs(['--help'])` → 抛 `UsageError`\n  - UT-12 `parseCliArgs(['extra'])` → 抛 `UsageError`\n  - UT-13 `parseCliArgs(['--name', '-x'])` → 抛 `UsageError`\n  - UT-14 `parseCliArgs(['--name', 'a', '--name', 'b'])` → `{ name: 'b' }`\n- 断言写法：异常路径用 `assert.throws(() => parseCliArgs([...]), UsageError)` 或 `assert.throws(..., { name: 'UsageError' })`；成功路径用 `deepStrictEqual`。\n- 用例名格式：`test('US-02 UT-08 rejects empty name', ...)`，保证 TAP 输出可检索，满足「用例名称包含 US 编号前缀」。\n- test_first：\n  1. 先建只含一条断言的 `test/greet.test.js`，运行 `pnpm test` 确认 `node --test` 自动发现该文件并输出用例名与 ok 行；\n  2. 再扩展至 UT-01~UT-14；\n  3. 变异验证：临时移除 `parseCliArgs` 的空值拦截，确认 UT-08/UT-09 失败并指出用例名，随后还原。\n- 本故事 scope_files 为空，backlog 的 test_files 为 `test/greet.test.js`，计入 Files/Creates。\n- 不引入任何测试框架或依赖，保持零 devDependency（TRD 2.1）。\n\n## Files\n**Creates**\n- `test/greet.test.js`\n\n**Modifies**\n- None"
+    },
+    {
+      "story_id": "S6",
+      "title": "S6: 编写 CLI 黑盒验收测试",
+      "labels": [
+        "chore",
+        "delivery"
+      ],
+      "milestone": "M3: 测试就绪",
+      "body": "<!-- story:S6 -->\n## Story\n**S6: 编写 CLI 黑盒验收测试**（type: chore · milestone: M3: 测试就绪 · PRD: US-03）\n\n作为开发者，我想通过真实进程验证 CLI 的 stdout、stderr 与退出码，以便测试口径与 PRD 验收标准完全一致。\n\n## Context\n- S5 已覆盖纯函数层；本故事补黑盒层：用 `spawnSync` 启动真实 CLI，覆盖 E2E-01~E2E-12 共 12 条用例（TRD 6.1、6.2）。\n- PRD 的验收标准全部以进程输出描述，因此黑盒用例是主证据，单元测试只作为快速定位手段（TRD 6.1「倒置的测试金字塔」）。\n- 参考：PRD §4 US-01/US-02/US-03；TRD §6.2 E2E 清单、§6.6 执行约定、§4.2 S6。\n\n## Acceptance Criteria\n- [ ] test/cli.test.js 使用 spawnSync(process.execPath, [CLI_PATH, ...args]) 运行真实 CLI，覆盖 E2E-01 至 E2E-12 共 12 条用例，pnpm test 全部通过\n- [ ] 默认输出、--name 正常值、--name 缺失取值三类必需场景各有至少 1 条用例，且断言使用 strictEqual 对 stdout 整串（含换行）、stderr、status 三者同时比对\n- [ ] 入口路径通过 fileURLToPath(new URL('../bin/hello.js', import.meta.url)) 解析，测试结果与当前工作目录无关\n\n## Definition of Done\n- [ ] 先写失败测试并提交（红态：runCli 辅助函数 + E2E-01 先行，随后对 E2E-05 做变异验证，确认用例失败并指出用例名）\n- [ ] 实现让测试通过（E2E-01~E2E-12 全绿，三类必需场景覆盖齐全）\n- [ ] 全量测试通过无回归：`pnpm test` 失败数为 0、退出码为 0\n- [ ] 无注释掉的代码与硬编码值（期望字符串与 CLI 契约一致）\n- [ ] 通过 PR 合并后关闭 issue\n\n## Dependencies\n- Blocked by: S5\n- Blocks: S7\n\n## Technical Details\n- `test/cli.test.js` 使用 `node:test` 与 `node:child_process.spawnSync`；`runCli(args)` 执行 `spawnSync(process.execPath, [CLI_PATH, ...args], { encoding: 'utf8' })`，返回 `{ stdout, stderr, status }`。\n- 入口绝对路径：`const CLI_PATH = fileURLToPath(new URL('../bin/hello.js', import.meta.url))`，与当前工作目录无关。\n- 用例清单（TRD 6.2）：\n  - E2E-01 无参数 → stdout `Hello, World!` + 换行、stderr 空、status 0\n  - E2E-02 无参数连续两次 → 两次 stdout 逐字节相同\n  - E2E-03 `--name Alice` → `Hello, Alice!` + 换行\n  - E2E-04 不传 `--name` → 与 E2E-01 相同\n  - E2E-05 `--name` → stdout 空、stderr `Usage: hello [--name <name>]` + 换行、status 1\n  - E2E-06 `--name ''` → 同上\n  - E2E-07 `--name 'Wu Ming'` → `Hello, Wu Ming!` + 换行\n  - E2E-08 `--foo` → Usage、status 1\n  - E2E-09 `extra` → Usage、status 1\n  - E2E-10 `--help` → Usage、status 1\n  - E2E-11 `--name=Alice` → `Hello, Alice!` + 换行\n  - E2E-12 `--name` + 256 字符值 → `Hello, <256 字符>!` + 换行\n- 每条用例同时断言三件套：`strictEqual(result.stdout, ...)`、`strictEqual(result.stderr, '')` 或固定 Usage、`strictEqual(result.status, 0 或 1)`。\n- 用例名带 US 编号前缀，例如 `US-02 E2E-05 missing --name value`，便于 CI 日志定位。\n- test_first：\n  1. 先写 `runCli` 与 E2E-01 单条断言，运行 `pnpm test` 确认通过；\n  2. 再扩展到 E2E-12 全量用例；\n  3. 变异验证 E2E-05：临时让 `--name` 缺失取值返回 0，确认该用例失败并指出用例名，随后还原。\n- 本故事 scope_files 为空，backlog 的 test_files 为 `test/cli.test.js`，计入 Files/Creates。\n- 不引入任何测试框架或依赖，保持零 devDependency。\n\n## Files\n**Creates**\n- `test/cli.test.js`\n\n**Modifies**\n- None"
+    },
+    {
+      "story_id": "S7",
+      "title": "S7: 建立 GitHub Actions 测试工作流",
+      "labels": [
+        "chore",
+        "delivery"
+      ],
+      "milestone": "M4: CI 就绪",
+      "body": "<!-- story:S7 -->\n## Story\n**S7: 建立 GitHub Actions 测试工作流**（type: chore · milestone: M4: CI 就绪 · PRD: US-04）\n\n作为 CI 验证人员，我想每次推送和拉取请求都自动运行测试，以便在合并前拦截回归。\n\n## Context\n- M3 已让 `pnpm test` 本地全绿；本故事把同一命令搬到 GitHub Actions，在 Node.js 20.x 上执行，并显式断言运行时依赖为 0（TRD 3.6）。\n- 当前仓库没有 `.github/workflows/ci.yml`，无任何自动检查，这是红态。\n- 成本约束：单 job、ubuntu-latest、`timeout-minutes: 10`、同 ref 并发取消，控制私有仓库 Actions 分钟消耗（TR-06）。\n- 参考：PRD §4 US-04；TRD §3.6 CI 工作流契约、§4.2 S7、§7.2 CI 信号。\n\n## Acceptance Criteria\n- [ ] 推送任意分支或创建拉取请求后工作流自动触发，test job 在 Node.js 20.x 上执行 pnpm install --frozen-lockfile 与 pnpm test 并全部通过\n- [ ] 工作流包含 Assert zero runtime dependencies 步骤，日志输出 runtime dependencies: 0\n- [ ] 工作流权限仅 contents: read，单 job、timeout-minutes 为 10，单次运行耗时低于 2 分钟\n\n## Definition of Done\n- [ ] 先写失败测试并提交（红态：先记录推送前无任何 Actions 运行记录，或首个工作流版本因 YAML/步骤问题失败，日志已留存）\n- [ ] 实现让测试通过（推送后 `test` job 在 Node.js 20.x 上全绿，日志含全部用例名与 `runtime dependencies: 0`）\n- [ ] 全量测试通过无回归：`pnpm test` 失败数为 0、退出码为 0\n- [ ] 无注释掉的代码与硬编码值（版本号 10.28.2、20.x 属于工作流契约常量）\n- [ ] 通过 PR 合并后关闭 issue\n\n## Dependencies\n- Blocked by: S6\n- Blocks: S8, S9\n\n## Technical Details\n- 工作流契约（TRD 3.6）：\n  - `name: CI`、`on: [push, pull_request]`、`permissions: contents: read`\n  - `concurrency: { group: ci-${{ github.ref }}, cancel-in-progress: true }`\n  - 单 job `test`：`runs-on: ubuntu-latest`、`timeout-minutes: 10`\n  - 步骤顺序：`actions/checkout@v4` → `pnpm/action-setup@v4`（`version: 10.28.2`、`run_install: false`）→ `actions/setup-node@v4`（`node-version: 20.x`、`cache: pnpm`）→ `pnpm install --frozen-lockfile` → `Assert zero runtime dependencies` → `pnpm test`\n- 零依赖断言步骤：合并 dependencies/optionalDependencies/peerDependencies，`Object.keys(...).length !== 0` 即非零退出；通过时固定输出 `runtime dependencies: 0`。\n- job 名必须是 `test`：它就是 S8 必需状态检查的上下文名称，改名即破坏合并门禁。\n- 不配置路径过滤：被跳过的必需检查会长期 pending，阻塞 PR（TRD 3.6）。\n- 只使用官方 `actions/*` 与 `pnpm/action-setup`，权限最小化（TR-09）。\n- test_first：\n  1. 本地按 CI 顺序复跑 `pnpm install --frozen-lockfile`、零依赖断言脚本、`pnpm test`，全绿后再写工作流文件；\n  2. 写完先做 YAML 校验：`python3 -c \"import yaml; yaml.safe_load(open('.github/workflows/ci.yml'))\"`；\n  3. 推送后 `gh run list --limit 1` 与 `gh run view <run-id> --log` 确认 job 名为 `test`、Node 20.x、日志含全部用例名与 `runtime dependencies: 0`，且耗时低于 2 分钟。\n- 本地预演属于测试先行证据；正式红态为首次推送前无任何运行记录。\n\n## Files\n**Creates**\n- `.github/workflows/ci.yml`\n\n**Modifies**\n- None"
+    },
+    {
+      "story_id": "S8",
+      "title": "S8: 配置主分支合并前状态检查",
+      "labels": [
+        "chore",
+        "delivery"
+      ],
+      "milestone": "M4: CI 就绪",
+      "body": "<!-- story:S8 -->\n## Story\n**S8: 配置主分支合并前状态检查**（type: chore · milestone: M4: CI 就绪 · PRD: US-04）\n\n作为 CI 验证人员，我想主分支在 CI 未通过时不可合并，以便用客观门禁替代单人维护下无法进行的人工评审。\n\n## Context\n- S7 已让 `test` job 在推送与拉取请求上运行；本故事把该 job 设为 `main` 分支的必需状态检查（TRD 3.7）。\n- 单人维护无法批准自己的 PR，因此 ruleset 明确不要求人工批准（PRD 风险「单人维护缺少交叉评审」）。\n- 依赖仓库管理员权限；若仓库计划或组织策略不支持 ruleset，本故事视为未达成并作为阻塞项上报，不以人工约定替代（TRD TR-03）。\n- 参考：PRD §4 US-04 第三条验收标准；TRD §3.7 合并门禁契约、§4.2 S8。\n\n## Acceptance Criteria\n- [ ] main 分支 ruleset 要求通过拉取请求合并、必需状态检查为 test、禁止强制推送与分支删除，gh api repos/{owner}/{repo}/rulesets 可读取到该配置\n- [ ] 构造测试拉取请求，其 CI 未通过时合并被拒绝（gh pr view --json statusCheckRollup 显示 test 未通过）；CI 通过后该拉取请求可合并\n- [ ] ruleset 不要求人工批准，适配单人维护场景\n\n## Definition of Done\n- [ ] 先写失败测试并提交（红态：先记录 ruleset 基线为空，并构造 CI 失败的 PR 证明当前可被合并或缺少门禁）\n- [ ] 实现让测试通过（ruleset 生效后同一 PR 合并被拒绝，修复 CI 后可合并）\n- [ ] 全量测试通过无回归：`pnpm test` 失败数为 0、退出码为 0\n- [ ] 无注释掉的代码与硬编码值\n- [ ] 通过 PR 合并后关闭 issue\n\n## Dependencies\n- Blocked by: S7\n- Blocks: S10\n\n## Technical Details\n- 目标配置（Repository ruleset，覆盖主分支）：\n  - 合并必须通过拉取请求，禁止直接推送\n  - 必需状态检查：`test`\n  - 不要求人工批准\n  - 禁止强制推送与分支删除\n- 取证命令（只读）：\n  - `gh api repos/tomagoyaky/macos-hello/rulesets --jq '.[] | {id, name, target}'`\n  - `gh api repos/tomagoyaky/macos-hello/rulesets/{id}`\n  - `gh pr view <number> --json statusCheckRollup`\n- 分支口径提示：backlog 的 S8 写的是 `main`，而仓库 base_branch 为 `develop`。执行前必须先确认 PR 实际合入分支；ruleset 必须覆盖所有合入路径（至少覆盖实际主干），否则门禁形同虚设。若分支策略需要，同时把同一 ruleset 应用到 `develop`，并在验收记录中说明。\n- test_first：\n  1. 先读取并记录 `gh api repos/{owner}/{repo}/rulesets` 基线输出（当前为空）；\n  2. 先构造一个必然失败的测试 PR（临时分支提交一个失败断言），确认合并被拒绝（红态）；\n  3. 修复使其 CI 通过，确认该 PR 可合并（绿态）。\n- 若 API 返回权限或计划不支持，按 TR-03 作为阻塞项上报，不得用人工约定替代该验收标准。\n- 本故事不产生代码文件；交付物是 ruleset JSON 与 PR 检查状态证据。\n\n## Files\n**Creates**\n- None\n\n**Modifies**\n- None"
+    },
+    {
+      "story_id": "S9",
+      "title": "S9: 演练测试拦截回归",
+      "labels": [
+        "chore",
+        "delivery"
+      ],
+      "milestone": "M5: 交付验收",
+      "body": "<!-- story:S9 -->\n## Story\n**S9: 演练测试拦截回归**（type: chore · milestone: M5: 交付验收 · PRD: US-03, US-04）\n\n作为维护者，我想证明测试与 CI 真的能拦住回归，以便把「测试有效」从声明变成有证据的事实。\n\n## Context\n- M3 写了测试、M4 接了 CI，但尚无证据表明失败会被发现；本故事做一次受控变异演练（TRD 6.4）。\n- 演练必须在临时分支进行，不得留在主干；主分支最终恢复绿色（TR-07）。\n- 参考：PRD §4 US-03 第三条、US-04 第二条；TRD §6.4 回归拦截演练、§4.2 S9。\n\n## Acceptance Criteria\n- [ ] 在临时分支把问候模板改为缺少感叹号后，本地 pnpm test 失败且退出码非 0，输出能指出具体失败用例名\n- [ ] 推送该临时分支后 CI 的 test job 失败，日志包含 not ok 行与对应用例名\n- [ ] 还原改动后主分支 CI 恢复绿色，演练提交不合入主干\n\n## Definition of Done\n- [ ] 先写失败测试并提交（红态：先记录主分支绿色基线，再在临时分支制造变异使本地测试失败）\n- [ ] 实现让测试通过（还原变异后本地与 CI 均恢复绿色，失败定位能力已被证明）\n- [ ] 全量测试通过无回归：`pnpm test` 失败数为 0、退出码为 0\n- [ ] 无注释掉的代码与硬编码值（演练改动不得残留在任何保留分支）\n- [ ] 通过 PR 合并后关闭 issue\n\n## Dependencies\n- Blocked by: S7\n- Blocks: S10\n\n## Technical Details\n- 演练步骤（TRD 6.4）：\n  1. 记录主分支当前 CI 绿色基线（运行链接）；\n  2. 新建临时分支，把 `formatGreeting` 模板改为 `Hello, ${name}`（去掉感叹号），或改错默认名称；\n  3. 本地执行 `pnpm test`，确认失败且退出码非 0，输出指出具体失败用例名；\n  4. 推送临时分支，确认 CI `test` job 失败，日志出现 `not ok` 行与对应用例名；\n  5. 还原改动（新提交或删除临时分支），确认主分支 CI 恢复绿色。\n- 证据留存：本地失败输出、CI 失败运行链接与 `not ok` 行、还原后的绿色运行链接；写入验收记录或 PR 描述。\n- 禁止使用强制推送；删除临时分支前确认其提交未合入主干。\n- 本故事本身就是「红态先行」演练：先制造失败并留存输出，再还原复跑确认全绿，两次结果均作为证据。\n- 若本地测试无法指出用例名，说明测试命名不合格，回到 S5/S6 修正后重做演练。\n\n## Files\n**Creates**\n- None\n\n**Modifies**\n- None"
+    },
+    {
+      "story_id": "S10",
+      "title": "S10: 端到端验收复跑并核对成功指标",
+      "labels": [
+        "chore",
+        "delivery"
+      ],
+      "milestone": "M5: 交付验收",
+      "body": "<!-- story:S10 -->\n## Story\n**S10: 端到端验收复跑并核对成功指标**（type: chore · milestone: M5: 交付验收 · PRD: US-01~US-05）\n\n作为验收人，我想在干净环境中按同一组命令复跑，以便确认交付物与 CI 结果一致、五项成功指标全部达标。\n\n## Context\n- 本故事是最后一个故事，依赖合并门禁（S8）与回归演练（S9）都已完成。\n- 前序故事都在工作区里增量验证；本故事要求从远端全新克隆、不依赖任何本地残留，可暴露遗漏提交的文件。\n- 参考：PRD §3 四条核心场景、§4 验收标准、§5 五项成功指标；TRD §4.2 S10、§7.3 指标测量映射。\n\n## Acceptance Criteria\n- [ ] 在临时目录全新克隆仓库，使用 Node.js 20.x 执行 pnpm install --frozen-lockfile 后依次运行 PRD 第 3 节四条场景命令，输出与 PRD 第 4 节验收标准逐条一致\n- [ ] pnpm test 失败数为 0，默认输出、--name 正常值、--name 缺失取值三类场景各有至少 1 条用例；本地结果与 CI 日志一致\n- [ ] PRD 第 5 节五项成功指标逐项核对并留存证据（命令输出、CI 运行链接），任一未达标即回到对应故事修复后整轮重跑\n\n## Definition of Done\n- [ ] 先写失败测试并提交（红态：先按 PRD §3 与 §5 清单完整执行一遍，未达标项记录为修复待办）\n- [ ] 实现让测试通过（逐项修复后整轮重跑，全部场景与五项指标达标）\n- [ ] 全量测试通过无回归：`pnpm test` 失败数为 0、退出码为 0\n- [ ] 无注释掉的代码与硬编码值\n- [ ] 通过 PR 合并后关闭 issue\n\n## Dependencies\n- Blocked by: S8, S9\n- Blocks: None\n\n## Technical Details\n- 复跑步骤：\n  1. `git clone <repo> /tmp/macos-hello-acceptance` 并进入临时目录；确认 `node --version` 为 20.x 并记录；\n  2. `pnpm install --frozen-lockfile`；\n  3. 依次执行 PRD §3 四条核心场景：本地自检 `node bin/hello.js`、个性化演示 `node bin/hello.js --name Alice`、推送触发 CI、按同一组命令复跑验收；\n  4. `pnpm test`，确认失败数为 0、退出码 0；\n  5. 逐项核对 PRD §5 五项指标：hello 命令可运行、`--name` 参数可用、测试通过率 100%、CI 成功率 100%（最近 10 次推送）、运行时第三方依赖数为 0。\n- 证据：命令输出、`gh run list` 运行链接、指标核对表；任一指标未达标即回到对应故事修复后整轮重跑。\n- 干净环境补充验证（US-05 AC2）：未安装任何第三方包时直接 `node bin/hello.js` 应输出 `Hello, World!` 且退出码 0。\n- test_first：先按 PRD §3 与 §5 清单完整执行一遍，把未达标项记录为修复待办，再逐项修复并整轮重跑；不得只复跑失败项。\n- 本故事不产生代码文件；交付物是验收记录（命令输出、CI 运行链接、指标核对表），可写入 PR 描述。\n\n## Files\n**Creates**\n- None\n\n**Modifies**\n- None"
+    },
+    {
+      "story_id": "DEPENDENCY-MAP",
+      "title": "Dependency Map",
+      "labels": [
+        "delivery"
+      ],
+      "milestone": "M1: 命令可用",
+      "body": "<!-- story:DEPENDENCY-MAP -->\n## Story\n**DEPENDENCY-MAP: 依赖关系与里程碑顺序映射**（type: delivery · milestone: M1: 命令可用）\n\n用于总览 bootstrap 生成的全部 issue：列出 10 条 story 的依赖方向、里程碑归属与推荐执行顺序。本 issue 不承载实现代码，不阻塞任何实现 story。\n\n## Context\n- backlog 中 10 条 story 通过 `depends_on` 构成链式主干 S1→S2→S3→S4→S5→S6→S7，S7 之后分叉为 S8、S9，二者在 S10 汇合（TRD 第 5 节）。\n- 里程碑顺序：M1（S1、S2）→ M2（S3、S4）→ M3（S5、S6）→ M4（S7、S8）→ M5（S9、S10）。\n- 其余 issue 均以首行 `<!-- story:Sx -->` 标记查重；本 issue 用 `<!-- story:DEPENDENCY-MAP -->` 标记，重复运行不会重复创建。\n\n## Acceptance Criteria\n- [ ] 依赖图与实际 issue 编号一致\n- [ ] 所有依赖方向无环\n\n## Definition of Done\n- [ ] 先写失败测试并提交（先确认依赖校验脚本在人为插入环或错误依赖时失败）\n- [ ] 实现让测试通过（依赖校验脚本对当前 issue 图全部通过）\n- [ ] 全量测试通过无回归：`pnpm test` 失败数为 0、退出码为 0\n- [ ] 无注释掉的代码与硬编码值\n- [ ] 通过 PR 合并后关闭 issue\n\n## Dependencies\n- Blocked by: None\n- Blocks: None\n\n## Technical Details\n- 依赖图（箭头表示 Blocked by → Blocks）：\n  - S1 → S2 → S3 → S4 → S5 → S6 → S7\n  - S7 → S8\n  - S7 → S9\n  - S8 → S10\n  - S9 → S10\n- 依赖明细：\n\n| Story | Blocked by | Blocks | Milestone |\n|-------|-----------|--------|-----------|\n| S1 | None | S2 | M1: 命令可用 |\n| S2 | S1 | S3 | M1: 命令可用 |\n| S3 | S2 | S4 | M2: 参数支持 |\n| S4 | S3 | S5 | M2: 参数支持 |\n| S5 | S4 | S6 | M3: 测试就绪 |\n| S6 | S5 | S7 | M3: 测试就绪 |\n| S7 | S6 | S8, S9 | M4: CI 就绪 |\n| S8 | S7 | S10 | M4: CI 就绪 |\n| S9 | S7 | S10 | M5: 交付验收 |\n| S10 | S8, S9 | None | M5: 交付验收 |\n\n- 里程碑顺序与完成标准：\n  - M1: 命令可用 — S1、S2；US-01 全部验收通过\n  - M2: 参数支持 — S3、S4；US-02 全部验收通过\n  - M3: 测试就绪 — S5、S6；US-03 前两条验收通过\n  - M4: CI 就绪 — S7、S8；US-04 全部验收通过\n  - M5: 交付验收 — S9、S10；US-03 第三条与 PRD §5 全部指标达标\n- 拓扑序：S1、S2、S3、S4、S5、S6、S7、S8、S9、S10；S8 与 S9 可交换顺序，S10 必须等两者都完成。\n- 校验方法：按 `<!-- story:... -->` 标记读取所有 issue body，解析 Dependencies 小节，检查每条依赖都能命中实际 issue 且 DFS 无回边；任一不符即失败。\n\n## Files\n**Creates**\n- None\n\n**Modifies**\n- None"
+    }
+  ],
+  "notes": [
+    "计划状态：只生成计划，未修改 docs/backlog.yml，未执行任何 gh 写操作；仅做了标签、里程碑与 issue 的只读查询（当前仓库无 milestone、无 issue，仅有 GitHub 默认标签）。",
+    "backlog 只给出里程碑 ID（M1~M5），名称取自 PRD 第 6 节：M1 命令可用、M2 参数支持、M3 测试就绪、M4 CI 就绪、M5 交付验收。",
+    "查重口径：每条 issue body 第一行固定为 <!-- story:<id> -->（Dependency Map 为 <!-- story:DEPENDENCY-MAP -->）；重复运行时先按该标记精确匹配，命中即跳过，不重复创建。标题前缀 <story id>: 仅用于人工识别，机器查重只认首行标记。",
+    "范围核对：backlog 出现的 type 为 chore 与 feature，labels 额外提供 fix（覆盖后续缺陷）与 delivery；每条实现 issue 至少带 type + delivery，Dependency Map 仅带 delivery。",
+    "S8 的目标分支在 backlog 中写为 main，而仓库 base_branch 为 develop；执行 S8 前必须确认 PR 实际合入分支，ruleset 应覆盖所有合入路径，否则门禁无效。",
+    "S5/S6 的 scope_files 为空，Files 小节把 backlog 的 test_files 计入 Creates，避免测试文件来源丢失；S8/S9/S10 不产生代码文件，Creates/Modifies 均为 None，交付物为证据。",
+    "依赖方向：S1→S2→S3→S4→S5→S6→S7，S7→S8、S7→S9，S8/S9→S10，无环；S8 与 S9 可并行，S10 必须等两者都完成。",
+    "统一约束：Node.js 20.x（.nvmrc 与 CI 一致）、零运行时与零开发依赖、退出码用 process.exitCode、不使用 console.log 与 process.exit；每条 issue 先写失败测试、经 PR 合并后关闭。",
+    "风险提示：S8 依赖仓库管理员权限与 ruleset 支持（TRD TR-03），不可用时作为阻塞项上报，不得以人工约定替代；S9 的变异提交禁止留在主干。"
+  ]
+}

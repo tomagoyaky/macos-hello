@@ -1,0 +1,105 @@
+{
+  "story_id": "S7",
+  "title": "建立 GitHub Actions 测试工作流",
+  "status": "pass",
+  "branch": "chore/S7",
+  "base_branch": "develop",
+  "base_sha": "226171d9fe277e9113902c25a2effae7850218fb",
+  "head_sha": "031da7eb25bdcd8f006acadb4f0ba00c84477ac5",
+  "commits": [
+    "109ef59 test(S7): add failing tests for 建立 GitHub Actions 测试工作流",
+    "031da7e chore(ci): 建立 GitHub Actions 测试工作流"
+  ],
+  "pr": {
+    "number": 18,
+    "url": "https://github.com/tomagoyaky/macos-hello/pull/18",
+    "state": "OPEN",
+    "baseRefName": "develop",
+    "mergeable": "MERGEABLE",
+    "headRefOid": "031da7eb25bdcd8f006acadb4f0ba00c84477ac5",
+    "changedFiles": 2,
+    "additions": 314,
+    "deletions": 0
+  },
+  "checks": [
+    {
+      "id": 1,
+      "name": "分支名匹配 ^(feature|fix|chore)/",
+      "result": "pass",
+      "evidence": "git rev-parse --abbrev-ref HEAD => chore/S7，命中 ^(feature|fix|chore)/。git rev-parse HEAD => 031da7eb25bdcd8f006acadb4f0ba00c84477ac5；git rev-parse origin/chore/S7 => 031da7eb25bdcd8f006acadb4f0ba00c84477ac5；PR #18 headRefOid => 031da7eb25bdcd8f006acadb4f0ba00c84477ac5，三者一致。git merge-base develop HEAD => 226171d9fe277e9113902c25a2effae7850218fb，与 develop 当前指针相同。"
+    },
+    {
+      "id": 2,
+      "name": "develop..HEAD 每条提交符合 conventional commits",
+      "result": "pass",
+      "evidence": "git log develop..HEAD --format=%s => ['chore(ci): 建立 GitHub Actions 测试工作流', 'test(S7): add failing tests for 建立 GitHub Actions 测试工作流']，共 2 条。git log develop..HEAD --format=%s | grep -Ec '^(feat|fix|docs|chore|refactor|test|perf|ci|style)(\\([^)]+\\))?: .+' => 2，与总提交数 2 相等，无不符合项。"
+    },
+    {
+      "id": 3,
+      "name": "存在 test(S7): 提交且早于实现提交",
+      "result": "pass",
+      "evidence": "git log --reverse develop..HEAD --format='%h %s' => 109ef59 test(S7): add failing tests for 建立 GitHub Actions 测试工作流 -> 031da7e chore(ci): 建立 GitHub Actions 测试工作流，test 提交在前、实现提交在后。git show --stat 109ef59 => test/workflow.test.js | 265 +++，1 file changed, 265 insertions(+)，仅测试文件；git show --name-only --format='' 031da7e => .github/workflows/ci.yml，实现提交未夹带测试改动。"
+    },
+    {
+      "id": 4,
+      "name": "lint、typecheck、test 全部 exit 0（不存在的跳过并注明）",
+      "result": "pass",
+      "evidence": "package.json scripts = ['lint','test','build']，无 typecheck / type-check 脚本（node -e 读取 => 'typecheck: MISSING'），按规则跳过并注明。pnpm run lint => node --check bin/hello.js，LINT_EXIT=0。pnpm test => tests 47 / suites 0 / pass 47 / fail 0 / cancelled 0 / skipped 0，TEST_EXIT=0。另执行 pnpm run build => BUILD_EXIT=0；pnpm install --frozen-lockfile => INSTALL_EXIT=0（Already up to date，pnpm v10.28.2），证明 CI 的冻结锁文件安装步骤在本地可复现。"
+    },
+    {
+      "id": 5,
+      "name": "develop...HEAD 至少包含一个 test/spec 文件",
+      "result": "pass",
+      "evidence": "git diff --name-only develop...HEAD => ['.github/workflows/ci.yml', 'test/workflow.test.js']，包含 test 文件 test/workflow.test.js；PR #18 changedFiles=2、additions=314、deletions=0，与两点变更一致，无越界文件（scope_files 仅 .github/workflows/ci.yml，test_files 为空但 Story 允许新增测试支撑验收）。"
+    },
+    {
+      "id": 6,
+      "name": "验收标准逐条映射到测试名称或测试内容",
+      "result": "pass",
+      "evidence": "测试文件 test/workflow.test.js 共 7 条 S7 用例（grep -cE \"^test\\('S7 \" => 7），逐条映射：AC1 -> 'S7 AC1 ci.yml is named CI and triggers on push and pull_request'（:176）+ 'S7 AC1 test job runs pnpm install --frozen-lockfile then pnpm test on Node.js 20.x'（:195）+ 'S7 AC1 test job provisions the pnpm version pinned by packageManager'（:214）；AC2 -> 'S7 AC2 zero dependency step prints \"runtime dependencies: 0\"'（:227）+ 'S7 AC2 zero dependency step fails when package.json declares a runtime dependency'（:237）；AC3 -> 'S7 AC3 workflow permissions are limited to contents: read'（:252）+ 'S7 AC3 test job is a single ubuntu-latest job capped at 10 minutes'（:261）。真实 CI 运行佐证：push 事件 run 41023133861 conclusion=success（07:56:13 触发，07:56:32 完成，约 19 秒），pull_request 事件 run 41023157884 conclusion=success（07:56:27 触发，07:56:48 完成，约 21 秒），job 名 test、全部步骤 success（Checkout / Set up pnpm / Set up Node.js / Install dependencies / Run tests / Assert zero runtime dependencies）；CI 日志显示 '# tests 47 / # pass 47 / # fail 0'，且 'Assert zero runtime dependencies' 步骤实际输出行 'runtime dependencies: 0'。三条验收全部命中。"
+    },
+    {
+      "id": 7,
+      "name": "DRY_RUN=false：gh pr view 成功且 state=OPEN、baseRefName=develop",
+      "result": "pass",
+      "evidence": "gh pr view \"chore/S7\" --repo \"tomagoyaky/macos-hello\" --json state,mergeable,url,baseRefName => {\"baseRefName\":\"develop\",\"mergeable\":\"MERGEABLE\",\"state\":\"OPEN\",\"url\":\"https://github.com/tomagoyaky/macos-hello/pull/18\"}，PR_EXIT=0。补充查询 gh pr view 18 --json number,title,changedFiles,additions,deletions,headRefOid,state,baseRefName,mergeable,url => number=18、title='S7: 建立 GitHub Actions 测试工作流'、changedFiles=2、additions=314、deletions=0、headRefOid=031da7eb25bdcd8f006acadb4f0ba00c84477ac5。"
+    },
+    {
+      "id": 8,
+      "name": "DRY_RUN=true 的 plan 文件与工作区洁净检查",
+      "result": "pass",
+      "evidence": "不适用：本次 DRY_RUN=false，该条件性检查未触发。旁证：git status --porcelain 仅 ?? .claude/、?? CLAUDE.md、?? docs/（均为此前即存在的工作流产物，其中 docs/.workflow 为允许的遥测目录），无业务文件脏改动；.github/workflows/ci.yml 已纳入提交（出现在 develop...HEAD diff 中），非未跟踪文件。"
+    }
+  ],
+  "red_evidence_cross_check": {
+    "result": "confirmed",
+    "detail": "独立复现：rsync 当前工作树（排除 .git/node_modules/docs/.claude）到 /tmp/s7-gate-red，删除 .github/workflows/ 下唯一文件 ci.yml，运行 node --test => RED_EXIT=1，结果为 tests 47 / pass 39 / fail 8。失败明细为 7 条 S7 用例（S7 AC1 ×3、S7 AC2 ×2、S7 AC3 ×2）全部以 'AssertionError: .github/workflows/ci.yml must exist' 失败，另 1 条 'S1 pnpm-lock.yaml and .gitignore are committed' 因副本无 .git 属伪失败。真实仓库在提交 109ef59 时即为 40 通过 / 7 失败，与 TDD 报告（40 pass / 7 fail，原因均为 ci.yml 缺失）完全一致。另本地用当前工作树执行 pnpm test => 47/47 通过，说明同一套测试随 ci.yml 落地由红转绿。验证后保留 /tmp/s7-gate-red 副本未清理（位于 /tmp，不影响仓库）。"
+  },
+  "acceptance": [
+    {
+      "criterion": "推送任意分支或创建拉取请求后工作流自动触发，test job 在 Node.js 20.x 上执行 pnpm install --frozen-lockfile 与 pnpm test 并全部通过",
+      "result": "pass",
+      "evidence": ".github/workflows/ci.yml 的 on 为 push（无分支过滤，任意分支）+ pull_request；实际触发证据：commit 031da7e 同时产生 push run 41023133861 与 pull_request run 41023157884，均 conclusion=success。setup-node 配置 node-version: 20.x；步骤顺序 Install dependencies（pnpm install --frozen-lockfile）在 Run tests（pnpm test）之前且均 success；CI 日志 '# tests 47 / # pass 47 / # fail 0'。本地 pnpm install --frozen-lockfile 与 pnpm test 亦均 exit 0。"
+    },
+    {
+      "criterion": "工作流包含 Assert zero runtime dependencies 步骤，日志输出 runtime dependencies: 0",
+      "result": "pass",
+      "evidence": "ci.yml 中存在 name: Assert zero runtime dependencies 的步骤，脚本统计 package.json 的 dependencies/optionalDependencies/peerDependencies 总数，非 0 时 exit 1，否则 echo 'runtime dependencies: 0'。PR run 41023157884 日志中该步骤输出行经 grep 精确命中：'test\tAssert zero runtime dependencies\t2026-10-30T07:56:43.9925610Z runtime dependencies: 0'，步骤 conclusion=success。负向防护由测试 'S7 AC2 zero dependency step fails when package.json declares a runtime dependency' 覆盖：临时 fixture 含 dependencies 时脚本非零退出，防止空断言。"
+    },
+    {
+      "criterion": "工作流权限仅 contents: read，单 job、timeout-minutes 为 10，单次运行耗时低于 2 分钟",
+      "result": "pass",
+      "evidence": "ci.yml 顶层 permissions 仅 contents: read，job 内无额外 permissions 提升；jobs 映射唯一键为 test（测试断言 Object.keys(jobs) 深度等于 ['test']）；job 配置 runs-on: ubuntu-latest、timeout-minutes: 10。实际耗时：push run 41023133861 从 07:56:13 到 07:56:32 约 19 秒（job 07:56:17-07:56:32），pull_request run 41023157884 从 07:56:27 到 07:56:48 约 21 秒（job 07:56:30-07:56:47），均远低于 2 分钟。"
+    }
+  ],
+  "notes": [
+    "工作流文件 49 行，结构清晰：单一 test job，权限最小化，超时上限 10 分钟，零依赖断言用 node -e 读取 package.json 而不引入 jq 等外部工具，符合零依赖项目定位。",
+    "零依赖断言除 dependencies 外还覆盖 optionalDependencies 与 peerDependencies，强度高于 AC 要求；未覆盖 bundledDependencies，影响可忽略。",
+    "测试侧自实现约 130 行缩进式 YAML 子集解析器（块映射/块序列/流式集合/块标量），避免新增依赖；已用真实 ci.yml 与 TRD 3.6 示例验证，但若后续工作流改用锚点、别名、标签等高级语法需同步扩展解析器（见风险）。",
+    "测试对 pnpm 版本做了双重约束：断言 package.json packageManager 为精确 pnpm@x.y.z，且 pnpm/action-setup 的 version 必须与之相等，防止 CI 与本地 pnpm 漂移导致 --frozen-lockfile 失败。",
+    "测试用 spawnSync('bash', ['-e', '-c', script]) 在仓库根与含依赖的临时 fixture 中分别执行零依赖脚本，正反两例都验证，避免步骤存在但断言失效。",
+    "本地 Node 为 v25.6.1（.nvmrc 钉 20），47/47 通过；CI 在 Node 20 上同样 47/47 通过，跨版本行为一致，S6 遗留的「需 CI 在 Node 20 复核」风险已闭环。",
+    "工作流未在 CI 中执行 pnpm run lint / build（AC 未要求）；lint 仍仅 node --check bin/hello.js，静态检查盲区延续，建议后续 Story 补强。",
+    "PR #18 mergeable=MERGEABLE 为查询时快照，合并前建议复核。"
+  ]
+}

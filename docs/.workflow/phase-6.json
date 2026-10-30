@@ -1,0 +1,71 @@
+{
+  "phase": "6",
+  "status": "pass",
+  "tool_used": [
+    "Reality Checker（独立交付关卡审查子代理）",
+    "gh CLI（gh repo view / gh issue list / gh pr list / gh run list / gh run view / gh api rulesets、actions/secrets、environments）",
+    "Node.js v25.6.1 + pnpm 10.28.2（pnpm test 实跑、CLI 实跑）",
+    "node -e（state.json 相位解析、phase-*.json 与 S10-acceptance.json 字段抽取）",
+    "Read / grep（delivery-summary.md、README.md、PRD.md 第 5 节、backlog.yml、test-report.md、ci.yml）",
+    "git（status / rev-parse / log）",
+    "Bash"
+  ],
+  "commands": [
+    "node '/Users/neolix/claudecode_workflow_ultracode/scripts/log-workflow-event.mjs' --root '/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello' --phase 6 --step 'phase/6/gate' --kind gate --actor 'Reality Checker' --status start --parent-step 'phase/6' --message '开始' || true",
+    "node -e '解析 docs/.workflow/state.json' => phases 0,1,2,3,4,5 全部 status=pass",
+    "node -e '逐文件读取 phase-0.json ~ phase-5.json' => phase 均为字符串，status 均 pass，gate.result 均 pass",
+    "node bin/hello.js => Hello, World!，EXIT=0；od -c => 16 字节 'Hello, World!\\n'",
+    "node bin/hello.js --name Alice => Hello, Alice!，EXIT=0；--name=Alice 同样 EXIT=0",
+    "node bin/hello.js --name => stderr 'Usage: hello [--name <name>]'，EXIT=1；--foo 同样 EXIT=1",
+    "pnpm test => tests 90 / pass 90 / fail 0 / skipped 0",
+    "cat package.json => scripts 含 lint/test/coverage/build，四类依赖字段均未声明",
+    "git status --short => M README.md；?? docs/.workflow/、docs/delivery-summary.md、docs/workflow-runbook.md（与交付总结 R11 描述一致，交付文档确未提交）",
+    "gh repo view tomagoyaky/macos-hello --json visibility,defaultBranchRef,isPrivate => PUBLIC / develop / isPrivate=false（与 PRD 私有约束冲突，交付总结已记为 R1）",
+    "gh issue list --state all --limit 30 => #1~#10 CLOSED，#11 Dependency Map OPEN（非 Story 条目，与交付总结 §2 补充事实一致）",
+    "gh pr list --state all --limit 30 => #12~#19、#22、#23、#24 均 MERGED；#20 CLOSED 未合并；#21 MERGED 到 main",
+    "gh run list --limit 15 => develop 最近 10 次 push 为 9 success + 1 failure(41033906893)，成功率 90%",
+    "gh run list --branch main --event push => 仅 2 次（41026526005、41023836794），均 success",
+    "gh run view 41041476005 --json conclusion,jobs => success；lint/test/build/deploy-staging 四个 job 全 success，headSha=23da245",
+    "gh api repos/tomagoyaky/macos-hello/rulesets/26192346 => main-protection，enforcement=active，include refs/heads/main，rules 含 deletion/non_fast_forward/pull_request(0 批准)/required_status_checks(test)，bypass_actors=[]",
+    "gh api repos/tomagoyaky/macos-hello/actions/secrets => total_count=1，仅 STAGING_DEPLOY_KEY",
+    "gh api repos/tomagoyaky/macos-hello/environments => 仅 staging",
+    "gh run view 41030609277 --json conclusion,headBranch => failure / temp/s9-fail（S9 拦截演练记录属实）",
+    "grep -n 'PR #24' docs/test-report.md => 第 6 行仍写 state=OPEN（交付总结 R4『状态过期』判定属实）",
+    "node -e '读取 docs/acceptance/S10-acceptance.json' => testSuite.local.tests=65（与交付总结 R5 的 65/90 差异说明一致）",
+    "grep -n 'Deployment not verified' .github/workflows/ci.yml => 第 163/164/168 行命中（部署占位判定属实）",
+    "grep -n '^## ' README.md => 含快速开始(29)、常用命令(72)、部署(145)、文档索引(163)",
+    "grep -n '^## ' docs/delivery-summary.md => 含 4 成功指标判定(68)、6 剩余风险(125)、7 后续建议(143)",
+    "date -u +%Y-%m-%dT%H:%M:%SZ",
+    "bash '/Users/neolix/claudecode_workflow_ultracode/scripts/merge-phase-state.sh' '/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello' '/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/docs/.workflow/phase-6.json'"
+  ],
+  "artifacts": [
+    "/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/docs/delivery-summary.md",
+    "/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/README.md",
+    "/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/docs/PRD.md",
+    "/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/docs/backlog.yml",
+    "/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/docs/.workflow/phase-6.json",
+    "/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/docs/.workflow/state.json",
+    "/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/docs/.workflow/phase-0.json ~ phase-5.json（审查基线）",
+    "线上证据：CI run https://github.com/tomagoyaky/macos-hello/actions/runs/41041476005；ruleset 26192346；S9 演练 run 41030609277"
+  ],
+  "gate": {
+    "name": "Phase 6 交付关卡（7 项）",
+    "result": "pass",
+    "evidence": "7 项检查全部通过，0 项失败，所有关键声明均经独立复核而非采信文档自述。1 前置阶段 PASS：node 解析 docs/.workflow/state.json，phases 0/1/2/3/4/5 共 6 个阶段全部存在且 status=pass；逐文件回读 phase-0.json~phase-5.json，phase 均为字符串、status 均 pass、gate.result 均 pass，无缺失阶段（Phase 6 为当前阶段，按规则不要求预先存在）。2 成功指标判定 PASS：docs/PRD.md 第 5 节共 5 项指标，delivery-summary.md 第 4 节（L72-L78）逐项给出判定与证据——hello 命令可运行=满足（od -c 16 字节 Hello, World!\\n、exit 0、S10 SC1 runs=3）、--name 参数可用=满足（SC2 stdout Hello, Alice!\\n、exit 0、E2E-03 整串断言）、测试通过率=满足（90/90、fail 0）、CI 成功率=部分满足（main 仅 2 次 push 运行 2/2=100% 但样本不足 10；develop 最近 10 次为 9 success + 1 failure=90%）、运行时第三方依赖数=满足（runtime dependencies: 0、pnpm list --prod 为空），5/5 均有判定且无『未满足』漏标。3 Story 映射 PASS：docs/backlog.yml 共 S1~S10 十条故事，delivery-summary.md 第 3 节（L57-L66）逐条给出 Issue 编号+状态+PR 编号+状态+测试证据，无一条缺失、无『未交付+原因』遗漏项；线上复核 gh issue list 显示 #1~#10 全部 CLOSED，gh pr list 显示 #12~#19、#22、#23、#24 全部 MERGED，与文档逐条吻合。#11 Dependency Map 保持 OPEN 但非 Story 条目，文档已显式说明。4 无证据表述检查 PASS：未发现无证据的『已完成/满足』表述，且抽查的关键声明全部属实——实跑 node bin/hello.js 得 Hello, World! exit 0、--name Alice 得 Hello, Alice! exit 0、--name 与 --foo 均 Usage 行+exit 1；实跑 pnpm test 得 tests 90 / pass 90 / fail 0；gh repo view 得 visibility=PUBLIC（文档未隐瞒，已列为风险 R1 并说明与 PRD 私有约束冲突）；gh run view 41041476005 得 lint/test/build/deploy-staging 四 job 全 success 且 headSha=23da245；gh api rulesets/26192346 得 enforcement=active、必需检查 test；gh api actions/secrets 仅 STAGING_DEPLOY_KEY、environments 仅 staging；gh run view 41030609277 得 conclusion=failure、headBranch=temp/s9-fail；grep test-report.md 第 6 行确仍写 PR #24 state=OPEN（R4 属实）；S10-acceptance.json 确为 tests=65（R5 属实）；ci.yml 第 163-168 行确为 placeholder 并输出 Deployment not verified（R3 属实）；git status 确显示 README.md 已改、docs/.workflow/ 与 delivery-summary.md 未跟踪（R11 属实）。CI 成功率与部署两项不利结论均被如实标注，未见粉饰。5 README 完整性 PASS：README.md 含『快速开始』(L29：corepack/pnpm install/node bin/hello.js + 预期输出)、『常用命令』(L72：install/lint/test/coverage/build 与 scripts 一致，dev/typecheck 标注未配置)、『部署』(L145：明确 deploy-staging 为占位、绿色不代表已发布，并给出本地复现 CI 校验序列)、『文档索引』(L163：PRD/TRD/backlog/交付总结/部署手册/工作流手册/测试报告/验收与演练记录/CLAUDE.md 共 10 条链接)。6 交付总结完整性 PASS：delivery-summary.md 第 6 节『剩余风险』(L125-L141) 列出 R1~R13 共 13 条，每条含影响、建议动作与证据；第 7 节『后续建议』(L143-L166) 按 P0/P1/P2 给出 12 条可复核动作并逐条映射风险编号，另附『交付结论』如实写明 CI 成功率仅部分满足、部署未验证、仓库可见性与 PRD 冲突，并明确『不建议按全部指标达标结项』。7 一致性 PASS：本关卡写入的 status=pass 与 gate.result=pass 一致。"
+  },
+  "risks": [
+    "CI 成功率指标仅『部分满足』：PRD 第 5 节要求主分支最近 10 次推送 CI 成功率 100%，实际 main 仅 2 次 push 运行（均 success，样本不足），默认分支 develop 最近 10 次为 9 success + 1 failure（run 41033906893，根因为 spec reporter 参数写法，已修复），成功率 90%。按 PRD 原文口径不能判为达标；交付总结已如实标注为部分满足并列入 R2/P0 事项。",
+    "部署未验证：.github/workflows/ci.yml 的 deploy-staging 为占位实现（输出 'No staging deploy target is configured... Deployment not verified.'），无真实 staging 主机与产物分发步骤，job 绿灯不代表已发布。交付总结与 README 均已标注，列入 R3/P1。",
+    "仓库可见性与 PRD 约束冲突：PRD 第 1 节要求『GitHub 私有仓库，不对外发布』，实测 gh repo view 返回 visibility=PUBLIC、isPrivate=false，代码与提交历史对外可见；未见 PRD 变更或例外批准记录。交付总结已列为 R1/P0，需仓库所有者决策。",
+    "交付文档尚未纳入版本控制：git status 显示 README.md 为已修改未提交，docs/delivery-summary.md、docs/workflow-runbook.md、docs/.workflow/ 为未跟踪。交付物仅存在于工作区，克隆仓库看不到阶段证据与交付总结，对应 R11/P0 第 1 条。",
+    "S8 线上 ruleset 校验在 CI 中降级为 SKIP：仓库 Actions secrets 仅 STAGING_DEPLOY_KEY，未配置 GH_TOKEN，test/ruleset.test.js 的 4 条实时检查在 CI 中静默跳过；本次 ruleset 26192346（active、必需检查 test）仅由本关卡通过 gh api 人工复核，无自动漂移检测，对应 R6/P1。",
+    "测试对 GitHub 实时 API 存在依赖：部分验收用例在无令牌、断网或限流时会失败或跳过（S10 关卡记录裸跑时 7 条因 403 失败），影响本地可复现性，对应 R7/P1。",
+    "契约冲突 D1 与 D8 未收口：名称含换行时输出两行，违反 TRD D1『成功路径 stdout 恰为一行』，需产品裁定，对应 R9/P2。",
+    "Node.js 20 已过上游维护期（2026-04 结束），存在升级债；离线证据只能用本机 v25.6.1 复跑（满足 engines.node>=20 但非 CLAUDE.md 要求的 20.x），Node 20.20.2 下的 90/90 结果引用自 docs/test-report.md 与 CI 日志。",
+    "develop 分支无 ruleset 保护（ruleset 条件仅 include refs/heads/main），直接 push develop 可绕过 PR 与检查，对应 R12/P2。",
+    "Issue #11 Dependency Map 长期 OPEN，属看板噪声，无功能影响，对应 R13/P2。"
+  ],
+  "next_action": "交付完成，输出最终报告",
+  "dry_run": false,
+  "timestamp": "2026-10-30T10:42:44Z"
+}

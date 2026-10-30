@@ -1,0 +1,166 @@
+{
+  "story_id": "S8",
+  "title": "配置主分支合并前状态检查",
+  "type": "chore",
+  "milestone": "M4",
+  "status": "pass",
+  "review_round": 2,
+  "branch": "chore/S8",
+  "base_branch": "develop",
+  "base_sha": "e82a81457ca116ee58b21c40de5c3dcbfdb1aec5",
+  "head_sha": "9a6353dba831b30993a112e0d9fc8b3958afe182",
+  "commits": [
+    "f3298e1 test(S8): add failing tests for 配置主分支合并前状态检查",
+    "9a6353d chore(ruleset): 配置主分支合并前状态检查"
+  ],
+  "pr": {
+    "number": 19,
+    "url": "https://github.com/tomagoyaky/macos-hello/pull/19",
+    "state": "OPEN",
+    "baseRefName": "develop",
+    "mergeable": "MERGEABLE",
+    "headRefOid": "9a6353dba831b30993a112e0d9fc8b3958afe182",
+    "changedFiles": 2,
+    "additions": 171,
+    "deletions": 0
+  },
+  "checks": [
+    {
+      "id": 1,
+      "name": "分支名匹配 ^(feature|fix|chore)/",
+      "result": "pass",
+      "evidence": "git branch --show-current => chore/S8，命中 ^(feature|fix|chore)/；git rev-parse HEAD origin/chore/S8 => 均为 9a6353dba831b30993a112e0d9fc8b3958afe182，gh pr view chore/S8 --json headRefOid => 9a6353dba831b30993a112e0d9fc8b3958afe182，三者一致。"
+    },
+    {
+      "id": 2,
+      "name": "develop..HEAD 每条提交符合 conventional commits",
+      "result": "pass",
+      "evidence": "git log develop..HEAD --format=%s => ['chore(ruleset): 配置主分支合并前状态检查', 'test(S8): add failing tests for 配置主分支合并前状态检查']，共 2 条，均符合 <type>(<scope>): <描述>（type 分别为 chore、test，均在允许集合内，冒号后均有非空描述），2/2 通过。"
+    },
+    {
+      "id": 3,
+      "name": "存在 test(S8): 提交且早于实现提交",
+      "result": "pass",
+      "evidence": "git log --reverse develop..HEAD => f3298e1 test(S8): add failing tests for 配置主分支合并前状态检查 在前，9a6353d chore(ruleset): 配置主分支合并前状态检查 在后；git merge-base --is-ancestor f3298e1 9a6353d 退出码 0；git show --stat f3298e1 仅 test/ruleset.test.js(+129)，9a6353d 仅 .github/rulesets/main.json(+42)，互不夹带。提交时间：test 2026-10-30T08:10:33Z，实现 2026-10-30T08:12:33Z。"
+    },
+    {
+      "id": 4,
+      "name": "lint、typecheck、test 全部 exit 0（不存在的跳过并注明）",
+      "result": "pass",
+      "evidence": "cat package.json => scripts = {lint: 'node --check bin/hello.js', test: 'node --test', build: 'node --check bin/hello.js'}，无 typecheck 脚本（纯 JS 无 tsc），按规则跳过并注明。pnpm lint 实际执行 node --check bin/hello.js，LINT_EXIT=0；pnpm test（不经管道、直接取退出码）TEST_EXIT=0，输出 tests 51 / suites 0 / pass 51 / fail 0 / cancelled 0 / skipped 0，含 S8 的 4 条 ruleset 用例全部通过。"
+    },
+    {
+      "id": 5,
+      "name": "develop...HEAD 至少包含一个 test/spec 文件",
+      "result": "pass",
+      "evidence": "git diff --name-only develop...HEAD => ['.github/rulesets/main.json', 'test/ruleset.test.js']，含 test/ruleset.test.js；gh pr view chore/S8 => changedFiles=2, additions=171, deletions=0，与本地 diff 一致。"
+    },
+    {
+      "id": 6,
+      "name": "验收标准逐条映射到测试名称或测试内容",
+      "result": "pass",
+      "evidence": "映射关系：AC1（PR 合并 + 必需状态检查 test + 禁止强推/删除 + gh api 可读）→ 'S8 AC1 main branch ruleset blocks branch deletion and force pushes'（test/ruleset.test.js:87，断言 deletion、non_fast_forward）与 'S8 AC1 main branch ruleset requires a pull request with the test status check'（:94，断言 pull_request 规则 + required_status_checks context=test），并直接读取 https://api.github.com/repos/tomagoyaky/macos-hello/rulesets 回读线上配置；AC2（失败 PR 合并被拒、通过后可合并）→ 'S8 AC2 a failing test check blocks merging because no actor may bypass the main ruleset'（:116，断言 context=test 且 bypass_actors=[]），行为实证见检查 9（PR #20 / #21）；AC3（不要求人工批准）→ 'S8 AC3 main branch ruleset requires no human approval'（:104，断言 required_approving_review_count=0、require_code_owner_review!==true、require_last_push_approval!==true）。三条 AC 均有对应用例且全部通过。"
+    },
+    {
+      "id": 7,
+      "name": "DRY_RUN=false：gh pr view 成功且 state=OPEN、baseRefName=develop",
+      "result": "pass",
+      "evidence": "gh pr view chore/S8 --repo tomagoyaky/macos-hello --json state,mergeable,url,baseRefName => {\"state\":\"OPEN\",\"mergeable\":\"MERGEABLE\",\"url\":\"https://github.com/tomagoyaky/macos-hello/pull/19\",\"baseRefName\":\"develop\"}，退出码 0；补充查询 headRefOid=9a6353dba831b30993a112e0d9fc8b3958afe182、changedFiles=2、additions=171、deletions=0；statusCheckRollup 两条 test 检查均 conclusion=SUCCESS。"
+    },
+    {
+      "id": 8,
+      "name": "DRY_RUN=true 的 plan 文件与工作区洁净检查",
+      "result": "pass",
+      "evidence": "DRY_RUN=false，本项不适用。旁证：git status --porcelain => ['?? .claude/', '?? CLAUDE.md', '?? docs/']，均为环境既有未跟踪产物（docs/ 内含 .workflow 遥测与 PRD/TRD/backlog），无已跟踪业务文件改动，无计划外写入。"
+    },
+    {
+      "id": 9,
+      "name": "验收标准 AC2 的行为验证证据（构造测试 PR 验证合并被拒 / 通过后可合并）",
+      "result": "pass",
+      "evidence": "上一轮 fail 的阻塞项已闭环，本次独立回读 GitHub 原始数据：1) gh pr list --repo tomagoyaky/macos-hello --base main --state all => 2 条：#20 temp/s8-fail、#21 temp/s8-pass；2) gh pr view 20 --json state,baseRefName,mergeable,mergeStateStatus,mergedAt,statusCheckRollup => state=CLOSED、baseRefName=main、mergeStateStatus=BLOCKED、mergedAt=null，两条 test check 均 conclusion=FAILURE（run 41026175124 / 41026187600），PR #19 正文记录 gh pr merge 20 返回 rc=1，输出 'Pull request tomagoyaky/macos-hello#20 is not mergeable: the base branch policy prohibits the merge.'；3) gh pr view 21 --json ... => state=MERGED、baseRefName=main、mergedAt=2026-10-30T08:27:09Z，两条 test check 均 conclusion=SUCCESS（run 41026463431 / 41026472581）；4) git ls-remote --heads origin 'refs/heads/temp/*' => 空输出，临时分支已删除。失败 PR 被策略阻断、通过 PR 成功合并，AC2 的文字要求已被真实行为证据覆盖。"
+    }
+  ],
+  "red_evidence_cross_check": {
+    "result": "confirmed_with_timeline_caveat",
+    "detail": "本轮为 test-first 重跑：未新写测试，test/ruleset.test.js 已在 f3298e1 提交。独立核对：f3298e1（2026-10-30T08:10:33Z）仅含 test/ruleset.test.js(+129)，实现提交 9a6353d 为 08:12:33Z；docs/.workflow/events/20261030T061643Z-324d.jsonl 第 112 行（seq 112，ts=2026-10-30T08:10:44.175Z）记录 'S8 测试先行完成：新增 4 条 ruleset 用例全 RED（main 无生效 ruleset），既有 47 条全绿，已提交 f3298e1'；线上 ruleset 26192346 的创建时间 2026-10-30T08:12:06Z 晚于该事件 82 秒。三条证据链（提交时间、事件流、ruleset 创建时间）顺序一致，可证明 4 条 S8 用例在实现前处于 RED。因线上 ruleset 现已存在，未重放 RED（重放需删除线上规则，属破坏性操作），按时间线交叉验证结论。"
+  },
+  "acceptance": [
+    {
+      "criterion": "main 分支 ruleset 要求通过拉取请求合并、必需状态检查为 test、禁止强制推送与分支删除，gh api repos/{owner}/{repo}/rulesets 可读取到该配置",
+      "result": "pass",
+      "evidence": "gh api repos/tomagoyaky/macos-hello/rulesets => [{'id':26192346,'name':'main-protection','target':'branch','enforcement':'active'}]；gh api repos/tomagoyaky/macos-hello/rulesets/26192346 => conditions.ref_name.include=['refs/heads/main']、exclude=[]，rules=[deletion, non_fast_forward, pull_request(required_approving_review_count=0), required_status_checks(context='test')]，bypass_actors=[]，enforcement=active；4 条 S8 用例全部通过。"
+    },
+    {
+      "criterion": "构造测试拉取请求，其 CI 未通过时合并被拒绝（gh pr view --json statusCheckRollup 显示 test 未通过）；CI 通过后该拉取请求可合并",
+      "result": "pass",
+      "evidence": "PR #20（head temp/s8-fail，base main）：test check conclusion=FAILURE，mergeStateStatus=BLOCKED，state=CLOSED，mergedAt=null，且合并尝试返回 rc=1 'the base branch policy prohibits the merge.'；PR #21（head temp/s8-pass，base main）：test check conclusion=SUCCESS，state=MERGED，mergedAt=2026-10-30T08:27:09Z；两条 PR 的 statusCheckRollup 均由 gh pr view --json 独立回读，临时分支已删除。"
+    },
+    {
+      "criterion": "ruleset 不要求人工批准，适配单人维护场景",
+      "result": "pass",
+      "evidence": "线上 ruleset pull_request 参数：required_approving_review_count=0、require_code_owner_review=false、require_last_push_approval=false、required_reviewers=[]，用例 'S8 AC3 main branch ruleset requires no human approval' 通过。备注：线上仍返回 require_extra_approval_for_unattributed_changes=true（GitHub 默认值，声明文件未显式声明），仅对 GitHub App/机器人推送的未归属提交可能追加一次批准，正常由 tomagoyaky 归属推送不受影响，不构成 AC3 失败；建议后续显式写入声明文件消除歧义。"
+    }
+  ],
+  "commands": [
+    "node '/Users/neolix/claudecode_workflow_ultracode/scripts/log-workflow-event.mjs' --root '/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello' --phase 3 --step 'story/S8/story-gate' --kind gate --actor 'Code Reviewer' --status start --parent-step 'story/S8' --message '开始' || true",
+    "git status --porcelain",
+    "git branch --show-current",
+    "git log --oneline -15",
+    "git log develop..HEAD --format=%s",
+    "git log --reverse develop..HEAD --format='%h %s'",
+    "git diff --name-only develop...HEAD",
+    "git log --format='%H %ci %s' -3",
+    "git show --stat --format='%h %ci %s' f3298e1",
+    "git show --stat --format='%h %ci %s' 9a6353d",
+    "git merge-base --is-ancestor f3298e1 9a6353d",
+    "git rev-parse HEAD origin/chore/S8",
+    "git fetch origin main",
+    "git log origin/main --format='%h %ci %s' -5",
+    "git show bf0c271 --stat -- README.md",
+    "git ls-remote --heads origin 'refs/heads/temp/*'",
+    "cat package.json",
+    "cat .github/rulesets/main.json",
+    "cat .github/workflows/ci.yml",
+    "pnpm lint",
+    "pnpm test",
+    "gh api repos/tomagoyaky/macos-hello/rulesets --jq '.[] | {id,name,target,enforcement}'",
+    "gh api repos/tomagoyaky/macos-hello/rulesets/26192346 --jq '{name,target,enforcement,conditions,rules,bypass_actors}'",
+    "gh pr view chore/S8 --repo tomagoyaky/macos-hello --json state,mergeable,url,baseRefName",
+    "gh pr view chore/S8 --repo tomagoyaky/macos-hello --json body,headRefOid,baseRefOid,commits,statusCheckRollup",
+    "gh pr view chore/S8 --repo tomagoyaky/macos-hello --json state,mergeable,url,baseRefName,headRefOid,changedFiles,additions,deletions",
+    "gh pr view 20 --repo tomagoyaky/macos-hello --json number,state,baseRefName,headRefName,mergeable,mergeStateStatus,closedAt,createdAt,mergedAt,url,statusCheckRollup",
+    "gh pr view 21 --repo tomagoyaky/macos-hello --json number,state,baseRefName,headRefName,mergeable,mergeStateStatus,closedAt,createdAt,mergedAt,url,statusCheckRollup,files,commits",
+    "gh pr list --repo tomagoyaky/macos-hello --base main --state all --json number,state,headRefName,title,createdAt,mergedAt --limit 20",
+    "gh repo view tomagoyaky/macos-hello --json visibility,isPrivate,defaultBranchRef,url",
+    "grep -n 'S8' docs/.workflow/events/20261030T061643Z-324d.jsonl",
+    "date -u +%Y-%m-%dT%H:%M:%SZ"
+  ],
+  "artifacts": [
+    "branch: chore/S8",
+    "commit: f3298e15e4e20697f766ab656e40cbf678332906 (test(S8))",
+    "commit: 9a6353dba831b30993a112e0d9fc8b3958afe182 (chore(ruleset))",
+    "PR: https://github.com/tomagoyaky/macos-hello/pull/19",
+    "AC2 evidence PR: https://github.com/tomagoyaky/macos-hello/pull/20 (failing check, BLOCKED, CLOSED)",
+    "AC2 evidence PR: https://github.com/tomagoyaky/macos-hello/pull/21 (passing check, MERGED 2026-10-30T08:27:09Z)",
+    "ruleset: id 26192346 main-protection (enforcement=active, include refs/heads/main)",
+    "/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/docs/.workflow/story-S8-gate.json"
+  ],
+  "risks": [
+    "PR #21 为验证 AC2 向 main 合并了临时提交 bf0c271（docs(s8): record ruleset passing-pr verification，README.md +2/-1，新增注释 '<!-- S8 AC2: temporary passing PR merged to main to verify ruleset allows merged checks. -->'），该提交未进入 develop，main 与 develop 已分叉一个文档提交；注释自称 temporary，建议后续 Story 合并前决定清理或同步到 develop。",
+    "online ruleset 含 require_extra_approval_for_unattributed_changes=true，而 .github/rulesets/main.json 未声明该字段；GitHub 默认值对常规人工提交无影响，但对 GitHub App/机器人推送的未归属提交可能追加一次人工批准，建议显式写入声明文件。",
+    "ruleset 通过管理 API 手工创建，仓库内 JSON 不会自动应用，规则变更/回填存在漂移风险；建议补 apply/verify 脚本并在 CI 中回读比对。",
+    "必需状态检查上下文 'test' 与 .github/workflows/ci.yml 的 job 名硬绑定，重命名或矩阵化会让门禁静默失效。",
+    "test/ruleset.test.js 直接请求 GitHub 公共 API（仓库为 public，匿名可读），匿名限额（60 次/小时/IP）在 CI 共享出口 IP 下可能偶发 403，导致测试抖动；建议在 CI 注入只读 token 或加重试。",
+    "ruleset 只保护 main，而日常开发与 PR 都汇入 develop（默认分支为 develop）；若没有明确的 develop→main 发布 PR 流程，该门禁实际很少被触发。",
+    "单人维护下 0 人批准是产品选择，治理强度依赖管理员权限与流程自律（TRD TR-03 已记录）。"
+  ],
+  "notes": [
+    "复审结论：上一轮 fail 的唯一原因（AC2 缺少指向 main 的测试 PR 行为证据）已闭环。PR #20 在 test 检查 FAILURE 时 mergeStateStatus=BLOCKED、合并命令返回 'the base branch policy prohibits the merge.'，PR #21 在 test 检查 SUCCESS 后成功 MERGED；两条记录均由本次独立 gh pr view --json statusCheckRollup 回读确认，非复述提交者声明。",
+    "8 项固定检查全部通过：分支名、提交规范（2/2）、test 先于实现、lint/test 退出码（typecheck 未定义已注明）、diff 含测试文件、三条验收映射、PR #19 OPEN+MERGEABLE+base develop、DRY_RUN 条件不适用；追加的第 9 项 AC2 行为证据本轮由 fail 转为 pass，故 checks_passed=9、checks_failed=0。",
+    "实现质量：声明式 .github/rulesets/main.json 作为唯一事实来源，字段齐全（deletion、non_fast_forward、pull_request=0 批准、required_status_checks=test、bypass_actors=[]）；测试直接读取 GitHub API 而非本地 JSON，可发现文件与线上漂移；用例命名带 S8 AC 编号；零第三方依赖，符合项目定位。",
+    "RED 证据独立交叉核对：test 提交 08:10:33Z 早于 ruleset 创建 08:12:06Z 与实现提交 08:12:33Z，且事件流 seq 112（08:10:44Z）记录全 RED，三链一致。",
+    "非阻塞建议：1) 显式声明 require_extra_approval_for_unattributed_changes；2) 补 ruleset apply/verify 脚本；3) 处理 main 上遗留的临时 README 注释；4) 为 API 测试注入 token 或重试以规避匿名限流。以上不改变本轮通过判定。",
+    "本次关卡未修改任何业务代码或测试，仅写入 docs/.workflow 遥测与关卡/阶段结果文件。"
+  ],
+  "timestamp": "2026-10-30T08:50:38Z"
+}

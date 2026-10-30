@@ -1,0 +1,162 @@
+{
+  "story_id": "S1",
+  "title": "校验零依赖项目骨架并补齐 Node 版本与使用说明",
+  "status": "pass",
+  "branch": "chore/S1",
+  "base_branch": "develop",
+  "base_sha": "b908b4b2575b70aaa8ecbec9ad31bf05f382e9df",
+  "head_sha": "612fbca3ea1c73fcca8d5557c5a8ca7140d46a91",
+  "commits": [
+    "9b5506a test(S1): add failing tests for 校验零依赖项目骨架并补齐 Node 版本与使用说明",
+    "612fbca chore(S1): 校验零依赖项目骨架并补齐 Node 版本与使用说明"
+  ],
+  "pr": {
+    "number": 12,
+    "url": "https://github.com/tomagoyaky/macos-hello/pull/12",
+    "state": "OPEN",
+    "baseRefName": "develop",
+    "mergeable": "MERGEABLE"
+  },
+  "checks": [
+    {
+      "id": 1,
+      "name": "分支名匹配 ^(feature|fix|chore)/",
+      "result": "pass",
+      "evidence": "git branch --show-current => chore/S1；printf 'chore/S1' | grep -Eq '^(feature|fix|chore)/' => OK"
+    },
+    {
+      "id": 2,
+      "name": "develop..HEAD 每条提交符合 conventional commits",
+      "result": "pass",
+      "evidence": "git log develop..HEAD --format=%s 输出 2 条，逐条 grep -Eq '^(feat|fix|docs|chore|refactor|test|perf|ci|style)(\\([^)]+\\))?: .+' 全部 OK：\nOK | chore(S1): 校验零依赖项目骨架并补齐 Node 版本与使用说明\nOK | test(S1): add failing tests for 校验零依赖项目骨架并补齐 Node 版本与使用说明"
+    },
+    {
+      "id": 3,
+      "name": "存在 test(S1): 提交且早于实现提交",
+      "result": "pass",
+      "evidence": "git log --reverse develop..HEAD 顺序为 9b5506a (2026-10-30 14:57:58 +0800, test(S1)) -> 612fbca (2026-10-30 14:58:57 +0800, chore(S1))；git merge-base --is-ancestor 9b5506a 612fbca 退出 0（test 提交是先验提交）。git show --stat 证实 9b5506a 仅新增 test/project.test.js（76 行），612fbca 仅改 .nvmrc(+1) 与 README.md(+47/-2)，未在实现提交中夹带测试文件。"
+    },
+    {
+      "id": 4,
+      "name": "lint、typecheck、test 全部 exit 0（不存在的跳过并注明）",
+      "result": "pass",
+      "evidence": "package.json scripts 仅含 {\"test\":\"node --test\"}；node -e 探测 lint/typecheck/type-check/build/format 均 absent，仓库无 eslint/tsconfig/biome/prettier 配置（ls | grep -Ei 'eslint|tsconfig|biome|prettier' => none），按规则跳过 lint 与 typecheck 并注明。test：pnpm test 输出 7 tests / 7 pass / 0 fail，EXIT=0；node --test 直跑同样 7 pass / 0 fail，EXIT=0。"
+    },
+    {
+      "id": 5,
+      "name": "develop...HEAD 至少包含一个 test/spec 文件",
+      "result": "pass",
+      "evidence": "git diff --name-only develop...HEAD =>\n.nvmrc\nREADME.md\ntest/project.test.js"
+    },
+    {
+      "id": 6,
+      "name": "验收标准逐条映射到测试名称或测试内容",
+      "result": "pass",
+      "evidence": "AC1（四类依赖字段为空 + pnpm list --prod --depth 0 条目数 0）-> 'US-05 package.json declares no third-party dependencies'（遍历 dependencies/devDependencies/optionalDependencies/peerDependencies，断言 undefined 或空对象）与 'US-05 pnpm list --prod --depth 0 reports zero entries'（spawnSync pnpm list --prod --depth 0 --json，拼 dependencies+optionalDependencies 键后 deepEqual []）。实跑 pnpm list --prod --depth 0 无依赖行、--json 仅含 name/version/path/private，条目数 0；node -e 逐字段校验 dependencies/devDependencies/optionalDependencies/peerDependencies => 全部 undefined OK。\nAC2（private/type/bin/engines/packageManager/test）-> 'S1 package.json keeps private, ESM, bin, engines, packageManager and test script'，逐字段断言 private===true、type==='module'、bin.hello==='./bin/hello.js'、engines.node==='>=20'、packageManager==='pnpm@10.28.2'、scripts.test==='node --test'；独立 node -e 复验六项全 OK。\nAC3（.nvmrc=20、README 支持范围/macOS+Node.js 20.x/pnpm 10.28.2 安装方式/三条使用命令、pnpm-lock.yaml 与 .gitignore 已提交）-> '.nvmrc pins Node 20'（trim==='20'，实际文件字节为 32 30 即 '20'）、'README documents support scope and pnpm install method'（/macOS/、/Node\\.js\\s*20\\.x/、/10\\.28\\.2/、/(corepack|npm (install|i) -g pnpm|brew install pnpm)/）、'README lists at least three usage commands'（要求默认命令 + --name 示例 + 去重后 >=3 条；README 实际给出 node bin/hello.js、--name Alice、--name=Alice 及 pnpm test）、'pnpm-lock.yaml and .gitignore are committed'（git ls-files --error-unmatch 退出 0）。"
+    },
+    {
+      "id": 7,
+      "name": "DRY_RUN=false：gh pr view 成功且 state=OPEN、baseRefName=develop",
+      "result": "pass",
+      "evidence": "gh pr view \"chore/S1\" --repo \"tomagoyaky/macos-hello\" --json state,mergeable,url,baseRefName => {\"baseRefName\":\"develop\",\"mergeable\":\"MERGEABLE\",\"state\":\"OPEN\",\"url\":\"https://github.com/tomagoyaky/macos-hello/pull/12\"}，EXIT=0；git ls-remote --heads origin chore/S1 => 612fbca3ea1c73fcca8d5557c5a8ca7140d46a91 refs/heads/chore/S1 与本机 HEAD 一致（已推送）。"
+    },
+    {
+      "id": 8,
+      "name": "DRY_RUN=true 的 plan 文件与工作区洁净检查",
+      "result": "pass",
+      "evidence": "不适用：本次 DRY_RUN=false，该条件性检查未触发。旁证：docs/.workflow/story-S1-test-plan.md 与 story-S1-impl-plan.md 均不存在；git status --porcelain 仅显示未跟踪的 .claude/、CLAUDE.md、docs/（均为工作流既有产物，无业务文件改动）。"
+    }
+  ],
+  "red_evidence_cross_check": {
+    "result": "confirmed",
+    "detail": "独立核对 TDD 报告的红态声明（7 用例 4 通过 3 失败）：在 test 提交 9b5506a 的树中 git ls-tree 无 .nvmrc（对应 '.nvmrc pins Node 20' 必失败）；git show 9b5506a:README.md 中 grep -E '20\\.x|10\\.28\\.2|corepack|npm install -g pnpm' 无匹配（对应 README 支持范围用例必失败）；同一 README 只有 2 条 node bin/hello.js 命令（对应 '至少三条使用命令' 必失败）；其余 4 条（US-05 两条、package.json 字段、lockfile/.gitignore 已提交）在基线已满足，与报告 4 通过一致。实现提交 612fbca 后 pnpm test 7/7 通过。"
+  },
+  "acceptance": [
+    {
+      "criterion": "package.json 四类依赖字段未声明或为空对象，pnpm list --prod --depth 0 条目数为 0",
+      "result": "pass"
+    },
+    {
+      "criterion": "package.json 保持 private:true、type:module、bin.hello=./bin/hello.js、engines.node>=20、packageManager pnpm@10.28.2 与 test 脚本，node -e 逐一校验通过",
+      "result": "pass"
+    },
+    {
+      "criterion": ".nvmrc 内容为 20；README 补充 macOS + Node.js 20.x 支持范围、pnpm 10.28.2 安装方式与三条使用命令；pnpm-lock.yaml 与 .gitignore 已提交",
+      "result": "pass"
+    }
+  ],
+  "findings": [
+    {
+      "severity": "suggestion",
+      "title": "README 以现在时宣称『CI 固定 20.x』，但仓库尚无 CI 配置",
+      "detail": "README.md 支持范围表写有『CI 固定 20.x』，而仓库当前不存在 .github/ 目录（CI 属 S7/S8 范围）。建议改为『CI 将固定 20.x』或在 S7 落地后回填，避免文档与实际状态不一致。不影响本 Story 三条验收。"
+    },
+    {
+      "severity": "suggestion",
+      "title": "Node 20.x 支持声明未在该大版本上实测",
+      "detail": "本机 Node 为 v25.6.1，本次 pnpm test 与字段校验均在 25.6.1 上执行。node --test 的文件发现行为、corepack 可用性（Node 25 起不再内置 corepack）在 20.x 上的表现需由 S7/S8 的 CI 覆盖；在此之前『Node.js 20.x 支持』仅为字段声明而非运行验证。"
+    },
+    {
+      "severity": "nit",
+      "title": "README 的三条使用命令当前无法运行",
+      "detail": "bin/hello.js 由 S2 交付，package.json 的 bin.hello 指向尚不存在的文件；当前 npm link 或全局安装会产生断链入口。README 已以注释显式说明，属可接受的按故事拆分推进。"
+    },
+    {
+      "severity": "nit",
+      "title": "『至少三条使用命令』断言偏宽松",
+      "detail": "test/project.test.js 第 61 行把 pnpm test 也计入命令集合，若将来删掉 --name=Alice 内联示例，仍可能以 2 条 CLI 命令 + pnpm test 满足 >=3。验收口径本身只要求『三条使用命令』，故不构成失败，仅提示后续收紧。"
+    },
+    {
+      "severity": "nit",
+      "title": ".nvmrc 与 README 缺少文件末尾换行",
+      "detail": "od -c .nvmrc 显示为 2 字节 '2' '0'，无 \\n；README 同样以 'No newline at end of file' 结尾。nvm 与主流编辑器均可正常处理，建议统一补尾换行以保持 diff 整洁。"
+    }
+  ],
+  "positive_notes": [
+    "测试从真实文件系统读取 package.json/README/.nvmrc 并对关键字段做精确断言，非空壳用例；且用 fileURLToPath(new URL(...)) 解析路径，不依赖调用时工作目录，从任意 cwd 运行均稳定。",
+    "README 安装方式同时给出 corepack 与 npm -g 两条路径，并说明『本项目零依赖、无构建步骤』，与 package.json 实际状态一致。",
+    "pnpm install --frozen-lockfile --lockfile-only 实测 Done in 248ms、锁文件零变更，验证了 README 安装命令与现有锁文件（importers: {.: {}}）自洽。",
+    "TDD 顺序真实可核：test 提交只含测试文件，实现提交只含 .nvmrc 与 README，未出现『测试与实现同一提交』的伪红态。"
+  ],
+  "commands": [
+    "node '/Users/neolix/claudecode_workflow_ultracode/scripts/log-workflow-event.mjs' --root '/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello' --phase 3 --step 'story/S1/story-gate' --kind gate --actor 'Code Reviewer' --status start --parent-step 'story/S1' --message '开始' || true",
+    "git branch --show-current",
+    "git status --porcelain",
+    "git log develop..HEAD --format='%h %s'",
+    "git diff --name-only develop...HEAD",
+    "git log --reverse develop..HEAD --format='%h|%ci|%s'",
+    "git ls-files",
+    "git merge-base develop HEAD",
+    "cat package.json / .nvmrc / README.md / .gitignore",
+    "cat -n test/project.test.js",
+    "pnpm test",
+    "node --test",
+    "pnpm list --prod --depth 0",
+    "pnpm list --prod --depth 0 --json",
+    "node -e '<逐字段校验 package.json 六字段与 .nvmrc>'",
+    "git ls-tree --name-only 9b5506a",
+    "git cat-file -e 9b5506a:.nvmrc",
+    "git show 9b5506a:README.md | grep -nE '20\\.x|10\\.28\\.2|corepack|npm install -g pnpm'",
+    "git show 9b5506a:README.md | grep -nE '^node bin/hello\\.js'",
+    "git show --stat --format='%h %s' 9b5506a",
+    "git show --stat --format='%h %s' 612fbca",
+    "git merge-base --is-ancestor 9b5506a 612fbca",
+    "git diff develop...HEAD -- README.md",
+    "git diff develop...HEAD -- .nvmrc",
+    "od -c .nvmrc",
+    "node -e '<探测 lint/typecheck/type-check/build/format 脚本>'",
+    "ls -1 | grep -Ei 'eslint|tsconfig|biome|prettier|\\.editorconfig'",
+    "pnpm install --frozen-lockfile --lockfile-only --ignore-scripts",
+    "git status --porcelain",
+    "cat /Users/neolix/claudecode_workflow_ultracode/demo/macos-hello/docs/.workflow/phase-2.json",
+    "cat /Users/neolix/claudecode_workflow_ultracode/scripts/merge-phase-state.sh",
+    "gh auth status",
+    "gh pr view \"chore/S1\" --repo \"tomagoyaky/macos-hello\" --json state,mergeable,url,baseRefName",
+    "gh pr view \"chore/S1\" --repo \"tomagoyaky/macos-hello\" --json number,title,headRefName,changedFiles,additions,deletions",
+    "git ls-remote --heads origin chore/S1",
+    "git remote -v",
+    "git rev-parse --abbrev-ref --symbolic-full-name @{u}",
+    "date -u +%Y-%m-%dT%H:%M:%SZ"
+  ],
+  "timestamp": "2026-10-30T07:01:10Z"
+}

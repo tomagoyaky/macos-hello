@@ -1,0 +1,103 @@
+{
+  "story_id": "S4",
+  "title": "非法用法返回 Usage 提示并以退出码 1 结束",
+  "status": "pass",
+  "branch": "feature/S4",
+  "base_branch": "develop",
+  "base_sha": "12be005bb72752d134f0dbe25a6611cc2b863ad9",
+  "head_sha": "df6702c0c0fcdf341f878e4c402b7e2eb679509d",
+  "commits": [
+    "f50e259 test(S4): add failing tests for 非法用法返回 Usage 提示并以退出码 1 结束",
+    "df6702c feat(cli): 非法用法返回 Usage 提示并以退出码 1 结束"
+  ],
+  "pr": {
+    "number": 15,
+    "url": "https://github.com/tomagoyaky/macos-hello/pull/15",
+    "state": "OPEN",
+    "baseRefName": "develop",
+    "mergeable": "MERGEABLE",
+    "headRefOid": "df6702c0c0fcdf341f878e4c402b7e2eb679509d"
+  },
+  "checks": [
+    {
+      "id": 1,
+      "name": "分支名匹配 ^(feature|fix|chore)/",
+      "result": "pass",
+      "evidence": "git branch --show-current => feature/S4，匹配 ^(feature|fix|chore)/。git rev-parse HEAD、origin/feature/S4、PR headRefOid 三者同为 df6702c0c0fcdf341f878e4c402b7e2eb679509d；git rev-list --left-right --count develop...HEAD => 0 2（develop 无新提交，HEAD 领先 2 个）。"
+    },
+    {
+      "id": 2,
+      "name": "develop..HEAD 每条提交符合 conventional commits",
+      "result": "pass",
+      "evidence": "git log develop..HEAD --format=%s => 'feat(cli): 非法用法返回 Usage 提示并以退出码 1 结束'、'test(S4): add failing tests for 非法用法返回 Usage 提示并以退出码 1 结束'，逐条 grep -Eq '^(feat|fix|docs|chore|refactor|test|perf|ci|style)(\\([^)]+\\))?: .+' 均输出 OK，无不符合项。"
+    },
+    {
+      "id": 3,
+      "name": "存在 test(S4): 提交且早于实现提交",
+      "result": "pass",
+      "evidence": "git log --reverse develop..HEAD => f50e259(test(S4), 15:26:15) -> df6702c(feat(cli), 15:27:17)；git merge-base --is-ancestor f50e259 df6702c 退出 0。git show --stat f50e259 仅 test/cli.test.js(+45) 与 test/greet.test.js(+16/-1)；git show --stat df6702c 仅 bin/hello.js(+12/-3) 与 src/greet.js(+30/-3)；git diff --stat f50e259..HEAD -- test/ 为空，实现提交未改动测试。测试落盘 src 侧完全未动（提交树中 bin/、src/ 保持 S3 状态），红态成立。"
+    },
+    {
+      "id": 4,
+      "name": "lint、typecheck、test 全部 exit 0（不存在的跳过并注明）",
+      "result": "pass",
+      "evidence": "package.json scripts = {lint: 'node --check bin/hello.js', test: 'node --test', build: 'node --check bin/hello.js'}；无 typecheck / type-check 脚本（pnpm run typecheck => ERR_PNPM_NO_SCRIPT Missing script: typecheck），按规则跳过并注明。pnpm run lint => exit=0；pnpm test => tests 26 / pass 26 / fail 0 / skipped 0，exit=0；附带 pnpm run build => exit=0。"
+    },
+    {
+      "id": 5,
+      "name": "develop...HEAD 至少包含一个 test/spec 文件",
+      "result": "pass",
+      "evidence": "git diff --name-only develop...HEAD => bin/hello.js / src/greet.js / test/cli.test.js / test/greet.test.js，包含两个测试文件；git diff --stat 汇总 4 files changed, 96 insertions(+), 7 deletions(-)。变更集合与 scope_files（src/greet.js、bin/hello.js）严格一致，无越界文件。"
+    },
+    {
+      "id": 6,
+      "name": "验收标准逐条映射到测试名称或测试内容",
+      "result": "pass",
+      "evidence": "AC1（--name 缺值与 --name \"\" 时 stdout 空、stderr 恰为 'Usage: hello [--name <name>]\\n'、退出码 1）-> test/cli.test.js:101 'US-02 AC3 / E2E-05 \"--name\" without a value prints exactly the Usage line and exits 1' 与 :105 'US-02 AC3 / E2E-06 \"--name \\\\\"\\\\\"\" (empty value) ...'，经 assertUsageError 断言 status=1、stdout.length=0、stderr 与 29 字节 EXPECTED_USAGE 逐字节相等。AC2（--foo、--help、-h、位置参数 extra、歧义取值 --name -x 同一文案且退出码 1）-> :109 'E2E-08 unknown option \"--foo\"'、:113 'E2E-09 positional argument \"extra\"'、:117 'E2E-10 \"--help\" is rejected as an unknown option'、:121 '\"-h\" is rejected as an unknown option'、:125 'ambiguous value \"--name -x\"'，五条共用同一 assertUsageError。AC3（所有解析异常包装为 UsageError、stderr 不出现 ERR_PARSE_ARGS）-> test/greet.test.js:46 'US-02 AC3 parseCliArgs wraps every parse failure as UsageError'（对 7 种非法 argv 断言 error.name === 'UsageError'），并在 cli.test.js:33-37 断言 stderr 不含 'ERR_PARSE_ARGS'；grep -rn 'ERR_PARSE_ARGS' src bin 无命中。"
+    },
+    {
+      "id": 7,
+      "name": "DRY_RUN=false：gh pr view 成功且 state=OPEN、baseRefName=develop",
+      "result": "pass",
+      "evidence": "gh pr view \"feature/S4\" --repo \"tomagoyaky/macos-hello\" --json state,mergeable,url,baseRefName => {\"baseRefName\":\"develop\",\"mergeable\":\"MERGEABLE\",\"state\":\"OPEN\",\"url\":\"https://github.com/tomagoyaky/macos-hello/pull/15\"}，exit=0。补充查询：number=15、title='S4: 非法用法返回 Usage 提示并以退出码 1 结束'、headRefOid=df6702c0c0fcdf341f878e4c402b7e2eb679509d、changedFiles=4、additions=96、deletions=7，与本机 HEAD 一致。"
+    },
+    {
+      "id": 8,
+      "name": "DRY_RUN=true 的 plan 文件与工作区洁净检查",
+      "result": "pass",
+      "evidence": "不适用：本次 DRY_RUN=false，该条件性检查未触发。旁证：git status --porcelain 仅 ?? .claude/、?? CLAUDE.md、?? docs/（均为此前即存在的未跟踪工作流产物，非本 Story 产生），git diff / git diff --cached 均为空，业务文件无脏改动。"
+    }
+  ],
+  "red_evidence_cross_check": {
+    "result": "confirmed",
+    "detail": "用 git archive f50e259 解包到 /tmp/s4-red-check 独立运行 node --test：tests 26 / pass 17 / fail 9 / skipped 0，退出码非 0。9 条失败中 8 条正是 S4 新用例（E2E-05、E2E-06、E2E-08、E2E-09、E2E-10、-h、--name -x、parseCliArgs wraps every parse failure as UsageError），失败信息为断言失败（如 'exit code must be 1, got 0'、stderr 为 ERR_PARSE_ARGS_* 堆栈而非 29 字节 Usage 行、'Missing expected exception: [\"--name\",\"\"] must be rejected'），与 TDD 报告完全一致；第 9 条为 test/project.test.js 的 'S1 pnpm-lock.yaml and .gitignore are committed'，因解包目录无 .git 而伪失败（'致命错误：不是 git 仓库'），在真实仓库中该用例通过。"
+  },
+  "acceptance": [
+    {
+      "criterion": "node bin/hello.js --name 与 node bin/hello.js --name \"\" 时标准输出为空，标准错误恰为 Usage: hello [--name <name>] 加一个换行符，退出码为 1",
+      "result": "pass",
+      "evidence": "spawnSync 实跑 ['--name'] => exit=1，stdout=''，stderr='Usage: hello [--name <name>]\\n'（29 字节）；['--name',''] => exit=1，stdout=''，stderr 同为 29 字节 Usage 行。"
+    },
+    {
+      "criterion": "未知选项 --foo、--help、-h，位置参数 extra，以及歧义取值 --name -x 均输出同一 Usage 文案并以退出码 1 结束",
+      "result": "pass",
+      "evidence": "实跑逐项：['--foo']、['--help']、['-h']、['extra']、['--name','-x'] 全部 exit=1、stdout=''、stderr='Usage: hello [--name <name>]\\n'（各 29 字节，字节级相同）。合法路径回归：无参 => 'Hello, World!\\n'/exit 0；'--name Alice' => 'Hello, Alice!\\n'/exit 0；'--name=Bob' => 'Hello, Bob!\\n'/exit 0。"
+    },
+    {
+      "criterion": "所有参数解析异常统一包装为 UsageError，标准错误中不出现 Node 内置的 ERR_PARSE_ARGS 英文原文",
+      "result": "pass",
+      "evidence": "src/greet.js:31-46 以 try/catch 包裹 node:util parseArgs，catch 内 throw new UsageError()（name='UsageError'，默认 message=USAGE 常量），空字符串取值额外拦截；bin/hello.js:4-11 仅捕获 UsageError 写出 USAGE+'\\n' 并置 process.exitCode=1，其它错误继续抛出。grep -rn 'ERR_PARSE_ARGS' src bin 无命中；实跑全部非法 argv 的 stderr 均为纯 29 字节 Usage 行，不含任何堆栈。"
+    }
+  ],
+  "notes": [
+    "实现方式简洁：USAGE 常量与 UsageError 收敛在 src/greet.js 单一来源，bin/hello.js 只做 I/O 与退出码，职责边界清晰。",
+    "使用 process.exitCode = 1 而非 process.exit(1)，保证 stderr 写入后能正常冲刷，是正确做法。",
+    "捕获块完全丢弃原始异常（catch 无绑定变量），调试时无法追溯根因；建议 throw new UsageError(undefined, { cause: error }) 保留 cause（不影响用户可见输出）。",
+    "bin/hello.js 写出的是 USAGE 常量而非 error.message，UsageError 的 message 形同虚设；将来若需要区分不同提示文案需改为写 error.message。",
+    "--name=-x 内联形式会被当成合法值 '-x' 接受（输出 'Hello, -x!'），与分离形式 --name -x 的拒绝行为不一致；验收未覆盖，可接受但值得留意。",
+    "空白字符串（如 --name '   '）未被拦截，会输出 'Hello,    !'；验收仅要求空字符串，属范围外行为。",
+    "cli.test.js 中 assertUsageError 的 'not includes ERR_PARSE_ARGS' 断言在 stderr 逐字节相等断言之后已蕴含成立，属冗余但不影响正确性；E2E-01 用例也重复了 assertGreeting 的断言逻辑，属轻微重复。",
+    "test/greet.test.js 用 error.name === 'UsageError' 而非 instanceof，是为红态可导入而做的刻意选择；当前 src 已导出 UsageError，后续可升级为 instanceof 断言。",
+    "lint 脚本仍只对 bin/hello.js 做 node --check，未覆盖本 Story 新增约 30 行的 src/greet.js，静态检查存在盲区。"
+  ]
+}

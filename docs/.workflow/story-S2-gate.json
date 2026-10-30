@@ -1,0 +1,165 @@
+{
+  "story_id": "S2",
+  "title": "实现默认问候入口",
+  "status": "pass",
+  "branch": "feature/S2",
+  "base_branch": "develop",
+  "base_sha": "f12df0deebd2cbe8eb89f231db54d8a923f2031d",
+  "head_sha": "507c86cf9b2a62b423551859fd8de3095c397eb9",
+  "commits": [
+    "ef4db3b test(S2): add failing tests for 实现默认问候入口",
+    "507c86c feat(cli): 实现默认问候入口"
+  ],
+  "pr": {
+    "number": 13,
+    "url": "https://github.com/tomagoyaky/macos-hello/pull/13",
+    "state": "OPEN",
+    "baseRefName": "develop",
+    "mergeable": "MERGEABLE",
+    "headRefOid": "507c86cf9b2a62b423551859fd8de3095c397eb9"
+  },
+  "checks": [
+    {
+      "id": 1,
+      "name": "分支名匹配 ^(feature|fix|chore)/",
+      "result": "pass",
+      "evidence": "git rev-parse --abbrev-ref HEAD => feature/S2；printf 'feature/S2' | grep -Eq '^(feature|fix|chore)/' => OK"
+    },
+    {
+      "id": 2,
+      "name": "develop..HEAD 每条提交符合 conventional commits",
+      "result": "pass",
+      "evidence": "git log --reverse develop..HEAD --format='%h %s' 输出: ef4db3b test(S2): add failing tests for 实现默认问候入口 / 507c86c feat(cli): 实现默认问候入口。两条逐条 grep -Eq '^(feat|fix|docs|chore|refactor|test|perf|ci|style)(\\([^)]+\\))?: .+' 结果均为 OK。"
+    },
+    {
+      "id": 3,
+      "name": "存在 test(S2): 提交且早于实现提交",
+      "result": "pass",
+      "evidence": "git log --reverse develop..HEAD 顺序：ef4db3b (test(S2)) -> 507c86c (feat(cli))；git merge-base --is-ancestor ef4db3b 507c86c 退出 0。git show --stat ef4db3b 仅新增 test/cli.test.js(+40) 与 test/greet.test.js(+44)；git show --stat 507c86c 仅新增 bin/hello.js(+4) 与 src/greet.js(+10)；git diff --stat ef4db3b..HEAD -- test/ 为空，实现提交未改动测试文件。"
+    },
+    {
+      "id": 4,
+      "name": "lint、typecheck、test 全部 exit 0（不存在的跳过并注明）",
+      "result": "pass",
+      "evidence": "package.json scripts 仅含 {\"test\":\"node --test\"}；node -e 探测 lint / typecheck 均 MISSING，按规则跳过并注明。test：pnpm test 输出 tests 13 / pass 13 / fail 0，EXIT=0。旁证：手工执行 node --check bin/hello.js 退出码 0（即 CLAUDE.md 表中 lint 动作的实际内容）。"
+    },
+    {
+      "id": 5,
+      "name": "develop...HEAD 至少包含一个 test/spec 文件",
+      "result": "pass",
+      "evidence": "git diff --name-only develop...HEAD =>\nbin/hello.js\nsrc/greet.js\ntest/cli.test.js\ntest/greet.test.js"
+    },
+    {
+      "id": 6,
+      "name": "验收标准逐条映射到测试名称或测试内容",
+      "result": "pass",
+      "evidence": "AC1（stdout 恰为 'Hello, World!' + 一个 \\n、stderr 为空、退出码 0）-> test/cli.test.js 'US-01 AC1 / E2E-01 default greeting writes exactly \"Hello, World!\\n\" to stdout'：断言 stderr.length===0、status===0、stdout.equals(Buffer.from('Hello, World!\\n'))。\nAC2（连续两次执行 stdout 逐字节一致）-> test/cli.test.js 'US-01 AC3 / E2E-02 two consecutive runs produce byte-identical stdout'：两次 spawnSync，Buffer.compare(first.stdout, second.stdout)===0，并各自与期望字节相等。\nAC3（node --check 通过；formatGreeting 为纯函数，不读 process/环境变量/时钟/随机数）-> test/cli.test.js 'US-01 AC3 bin/hello.js passes \"node --check\" syntax validation'（spawnSync(node, ['--check', CLI_PATH]) 退出 0）；test/greet.test.js 'US-01 / UT-01 formatGreeting() returns \"Hello, World!\"'；'US-01 AC3 formatGreeting does not reference process, clock or randomness'（剥离注释后静态扫描 process/Date/Math.random/performance.now/crypto.）；'US-01 AC3 formatGreeting output ignores ambient env, clock and random state'（改写 process.env.GREETING_NAME/TZ、Date.now、Math.random 后仍返回同一结果，finally 还原）。"
+    },
+    {
+      "id": 7,
+      "name": "DRY_RUN=false：gh pr view 成功且 state=OPEN、baseRefName=develop",
+      "result": "pass",
+      "evidence": "gh pr view \"feature/S2\" --repo \"tomagoyaky/macos-hello\" --json state,mergeable,url,baseRefName => {\"baseRefName\":\"develop\",\"mergeable\":\"MERGEABLE\",\"state\":\"OPEN\",\"url\":\"https://github.com/tomagoyaky/macos-hello/pull/13\"}，EXIT=0。git rev-parse origin/feature/S2 => 507c86c…，与本机 HEAD 及 PR headRefOid 三者一致（PR #13，title 'S2: 实现默认问候入口'）。"
+    },
+    {
+      "id": 8,
+      "name": "DRY_RUN=true 的 plan 文件与工作区洁净检查",
+      "result": "pass",
+      "evidence": "不适用：本次 DRY_RUN=false，该条件性检查未触发。旁证：docs/.workflow/ 下不存在 story-S2-test-plan.md 与 story-S2-impl-plan.md；git status --porcelain 仅显示 ?? .claude/、?? CLAUDE.md、?? docs/（均为本 Story 之前就存在的未跟踪工作流产物，无业务文件改动）。"
+    }
+  ],
+  "red_evidence_cross_check": {
+    "result": "confirmed",
+    "detail": "独立核对 TDD 报告红态（11 tests / 7 pass / 4 fail）：git ls-tree -r ef4db3b 只有 .gitignore、.nvmrc、README.md、package.json、pnpm-lock.yaml 与 3 个测试文件，git cat-file -e ef4db3b:bin/hello.js 与 ef4db3b:src/greet.js 均报『不在 ef4db3b 中』，确认实现文件不存在；test/ 三个文件在 ef4db3b 与 HEAD 完全一致（git diff --stat ef4db3b..HEAD -- test/ 为空）。据此红态必然为：test/cli.test.js 3 条用例因 spawnSync 运行缺失入口而失败（stdout 为空、退出码非 0），test/greet.test.js 因顶层 import '../src/greet.js' 报 ERR_MODULE_NOT_FOUND 整文件失败（node --test 计 1 条），test/project.test.js 7 条在基线全部通过 => 合计 11 tests、7 pass、4 fail，与报告逐项吻合。"
+  },
+  "acceptance": [
+    {
+      "criterion": "node bin/hello.js 的标准输出恰为 Hello, World! 加且仅加一个换行符，标准错误为空，退出码为 0",
+      "result": "pass",
+      "evidence": "实跑 node bin/hello.js > out 2> err：exit=0；od -c out => 'H e l l o ,   W o r l d ! \\n'（16 个 od 槽位，实为 14 字节）；od -An -tx1 => 48 65 6c 6c 6f 2c 20 57 6f 72 6c 64 21 0a；wc -c err => 0。"
+    },
+    {
+      "criterion": "同一命令连续执行两次，两次标准输出逐字节一致（cmp 或 od -c 字节比对无差异）",
+      "result": "pass",
+      "evidence": "两次执行分别写 /tmp/s2-out1.txt 与 /tmp/s2-out2.txt，cmp 输出为空且打印 'cmp: identical'，两次退出码均为 0；测试侧 Buffer.compare(first.stdout, second.stdout)===0 同样通过。"
+    },
+    {
+      "criterion": "node --check bin/hello.js 通过；src/greet.js 中 formatGreeting 为纯函数，不读取 process、环境变量、时钟或随机数",
+      "result": "pass",
+      "evidence": "node --check bin/hello.js => check_exit=0。源码 src/greet.js 仅含 DEFAULT_NAME 常量与模板字符串，零 import；node -e 独立探测 process/Date/Math.random/performance.now/crypto./require 全部 false，import 数为 0；两条静态扫描与行为测试（改写 env/Date.now/Math.random）均通过。bin/hello.js 仅作 I/O 适配（process.stdout.write），符合『副作用只在 bin/』的约定。"
+    }
+  ],
+  "findings": [
+    {
+      "severity": "suggestion",
+      "title": "package.json 仍缺 lint / build 脚本，静态门禁空窗",
+      "detail": "基线提交 b908b4b（chore: defer lint/build until CLI entry exists）把 lint/build 推迟到入口存在之后，S1 风险清单也写明『S2 需恢复 lint/build 脚本』；本次 S2 已交付 bin/hello.js，但 package.json 的 scripts 仍只有 test，CLAUDE.md 的脚本表与 package.json 不一致。按本关卡规则第 4 条（不存在的脚本跳过）不构成失败，且 package.json 不在 S2 的 scope_files 内，但建议在后续 Story（或衔接 S7 CI）恢复 `\"lint\": \"node --check bin/hello.js\"` 与 `\"build\": \"node --check bin/hello.js\"`，让文档与实现一致。"
+    },
+    {
+      "severity": "nit",
+      "title": "bin/hello.js 缺少文件末尾换行",
+      "detail": "tail -c 1 bin/hello.js 得到 ';'，文件末字节不是换行。node --check 与执行均不受影响，建议补尾换行以保持 diff 与工具兼容性（与 S1 对 .nvmrc/README 的同类提示一致）。"
+    },
+    {
+      "severity": "nit",
+      "title": "greet.test.js 的 crypto 静态扫描可被无点号导入绕过",
+      "detail": "禁用规则为 /\\bcrypto\\./，只能匹配 crypto 后跟点号的用法；若将来出现 `import { randomInt } from 'node:crypto'` 这类解构导入（crypto 后为引号），该条规则不会命中。当前 src/greet.js 零 import、行为测试也覆盖了时钟/随机数，不影响本 Story 验收；建议后续把规则收紧为 /\\bcrypto\\b/ 或额外断言源码不含 import 语句。"
+    },
+    {
+      "severity": "nit",
+      "title": "--name 参数当前被静默忽略",
+      "detail": "实跑 node bin/hello.js --name Alice 输出 Hello, World! 且退出码 0。这正是 S3/S4 的预期红态基线，不属于 S2 范围；提示在 S4 落地前，CLI 对未知参数不会报错，存在与 README 示例的临时不一致。"
+    }
+  ],
+  "positive_notes": [
+    "TDD 顺序真实可核：test 提交 ef4db3b 只含 2 个测试文件（84 行新增），实现提交 507c86c 只含 bin/hello.js 与 src/greet.js（14 行新增），且 ef4db3b 树中确实没有 bin/、src/。",
+    "断言按字节而非字符串 trim：Buffer.from('Hello, World!\\n') 做 stdout.equals，双跑用 Buffer.compare，严格对应『加且仅加一个换行符』与『逐字节一致』两条验收。",
+    "formatGreeting 实现极简且纯：单一默认参数 + 模板字符串，零 import、零副作用；I/O 与退出语义只在 bin/hello.js，符合项目约定的依赖方向。",
+    "测试用 fileURLToPath(new URL('../bin/hello.js', import.meta.url)) 定位入口，不依赖当前工作目录；全局状态改写放在 finally 中还原，测试间无脏状态。",
+    "本机 HEAD、origin/feature/S2 与 PR headRefOid 三者同为 507c86c，PR #13 已推送且 base=develop、mergeable=MERGEABLE。"
+  ],
+  "commands": [
+    "node '/Users/neolix/claudecode_workflow_ultracode/scripts/log-workflow-event.mjs' --root '/Users/neolix/claudecode_workflow_ultracode/demo/macos-hello' --phase 3 --step 'story/S2/story-gate' --kind gate --actor 'Code Reviewer' --status start --parent-step 'story/S2' --message '开始' || true",
+    "git status --porcelain",
+    "git rev-parse --abbrev-ref HEAD",
+    "git log --reverse --format='%h %H %s' develop..HEAD",
+    "git rev-parse HEAD",
+    "git rev-parse origin/feature/S2",
+    "git diff --name-only develop...HEAD",
+    "git diff --stat develop...HEAD",
+    "git merge-base develop HEAD",
+    "git show --stat --oneline ef4db3b",
+    "git show --stat --oneline 507c86c",
+    "git merge-base --is-ancestor ef4db3b 507c86c",
+    "git diff --stat ef4db3b..HEAD -- test/",
+    "git ls-tree -r --name-only ef4db3b",
+    "git cat-file -e ef4db3b:bin/hello.js",
+    "git cat-file -e ef4db3b:src/greet.js",
+    "cat package.json",
+    "cat -n bin/hello.js src/greet.js test/cli.test.js test/greet.test.js test/project.test.js",
+    "node --version",
+    "pnpm --version",
+    "pnpm test",
+    "node bin/hello.js > /tmp/s2-out1.txt 2> /tmp/s2-err1.txt; echo exit=$?",
+    "od -c /tmp/s2-out1.txt",
+    "od -An -tx1 /tmp/s2-out1.txt",
+    "wc -c < /tmp/s2-err1.txt",
+    "node bin/hello.js > /tmp/s2-out2.txt 2> /tmp/s2-err2.txt; echo exit=$?",
+    "cmp /tmp/s2-out1.txt /tmp/s2-out2.txt",
+    "node --check bin/hello.js",
+    "node -e '<探测 package.json scripts 中的 lint / typecheck / build / format>'",
+    "node -e '<扫描 src/greet.js 中的 process/Date/Math.random/performance.now/crypto/require/import>'",
+    "node bin/hello.js --name Alice",
+    "tail -c 1 bin/hello.js | od -An -c",
+    "grep -n -A 30 'id: S2' docs/backlog.yml",
+    "grep -n -i 'lint' docs/backlog.yml",
+    "git log --oneline -5 develop",
+    "git log --format=%s develop..HEAD | grep -Eq '^(feat|fix|docs|chore|refactor|test|perf|ci|style)(\\([^)]+\\))?: .+'",
+    "git fetch origin",
+    "git branch -r",
+    "gh pr view \"feature/S2\" --repo \"tomagoyaky/macos-hello\" --json state,mergeable,url,baseRefName",
+    "gh pr view feature/S2 --repo tomagoyaky/macos-hello --json headRefOid,commits,title,number",
+    "date -u +%Y-%m-%dT%H:%M:%SZ"
+  ],
+  "timestamp": "2026-10-30T07:13:12Z"
+}
