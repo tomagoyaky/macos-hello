@@ -1,4 +1,5 @@
 #!/usr/bin/env node
-import { formatGreeting } from '../src/greet.js';
+import { formatGreeting, parseCliArgs } from '../src/greet.js';
 
-process.stdout.write(`${formatGreeting()}\n`);
+const { name } = parseCliArgs(process.argv.slice(2));
+process.stdout.write(`${formatGreeting(name)}\n`);
