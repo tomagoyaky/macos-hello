@@ -1,0 +1,18 @@
+{
+  "branch_whitelist": [
+    "develop",
+    "main",
+    "release/*",
+    "hotfix/*",
+    "feature/*",
+    "fix/*",
+    "chore/*"
+  ],
+  "message_regex": "^(feat|fix|docs|chore|refactor|test|perf|ci|style)(\\([^)]+\\))?: .+",
+  "message_exempt_prefixes": ["Merge ", "Revert ", "fixup! ", "squash! "],
+  "deny_detached_head": true,
+  "allow_during_operation": true,
+  "hint_on_develop": true,
+  "skip_env_var": "GITFLOW_HOOKS_SKIP",
+  "audit_log": "~/.claude/gitflow-hooks-skip.log"
+}
