@@ -1,0 +1,179 @@
+project:
+  name: macos-hello
+  repo: tomagoyaky/macos-hello
+  base_branch: develop
+
+stories:
+  - id: S1
+    title: "校验零依赖项目骨架并补齐 Node 版本与使用说明"
+    type: chore
+    milestone: M1
+    prd_refs: [US-05]
+    depends_on: []
+    acceptance:
+      - "package.json 的 dependencies、devDependencies、optionalDependencies、peerDependencies 四类字段均未声明或为空对象，pnpm list --prod --depth 0 输出条目数为 0"
+      - "package.json 保持 private: true、type: module、bin.hello 指向 ./bin/hello.js、engines.node >= 20、packageManager pnpm@10.28.2 与 test 脚本，且 node -e 读取上述字段逐一校验通过"
+      - "新增 .nvmrc 内容为 20；README.md 补充支持范围（macOS + Node.js 20.x）、pnpm 10.28.2 安装方式与三条使用命令；pnpm-lock.yaml 与 .gitignore 已提交"
+    test_first:
+      - "改动前先运行 pnpm list --prod --depth 0 与 node -e 读取 package.json 四类依赖字段，记录基线证据（预期均为空，若发现条目则先移除）"
+      - "先运行版本一致性检查脚本（读取 .nvmrc 与 node --version 比对主版本号），确认当前因 .nvmrc 缺失而失败，补齐后转绿"
+    scope_files:
+      - package.json
+      - .nvmrc
+      - README.md
+      - pnpm-lock.yaml
+    test_files: []
+
+  - id: S2
+    title: "实现默认问候入口"
+    type: feature
+    milestone: M1
+    prd_refs: [US-01]
+    depends_on: [S1]
+    acceptance:
+      - "node bin/hello.js 的标准输出恰为 Hello, World! 加且仅加一个换行符，标准错误为空，退出码为 0"
+      - "同一命令连续执行两次，两次标准输出逐字节一致（cmp 或 od -c 字节比对无差异）"
+      - "node --check bin/hello.js 通过；src/greet.js 中 formatGreeting 为纯函数，不读取 process、环境变量、时钟或随机数"
+    test_first:
+      - "先执行 node bin/hello.js，确认当前因入口不存在而失败，记录错误输出作为红态基线"
+      - "先用 printf 构造期望字节 Hello, World! 加换行并保存为基准文件，实现后与命令输出做逐字节比对"
+    scope_files:
+      - bin/hello.js
+      - src/greet.js
+    test_files: []
+
+  - id: S3
+    title: "实现 --name 正常取值问候"
+    type: feature
+    milestone: M2
+    prd_refs: [US-02]
+    depends_on: [S2]
+    acceptance:
+      - "node bin/hello.js --name Alice 输出 Hello, Alice! 加一个换行符，标准错误为空，退出码为 0"
+      - "node bin/hello.js --name \"Wu Ming\" 输出 Hello, Wu Ming! 加一个换行符；--name=Alice 与 --name Alice 输出完全一致"
+      - "不传 --name 时输出仍为 Hello, World! 加一个换行符，行为与 S2 的验收结果一致"
+      - "传入 256 字符长度的 --name 取值时原样输出，不截断、不转义、不修改大小写"
+    test_first:
+      - "先运行 node bin/hello.js --name Alice 与 node bin/hello.js --name \"Wu Ming\"，确认当前仍输出默认问候（红态），并记录 stdout、stderr、退出码"
+      - "先运行 node bin/hello.js --name=Alice，确认内联形式当前未被支持，再纳入同一解析实现"
+    scope_files:
+      - src/greet.js
+      - bin/hello.js
+    test_files: []
+
+  - id: S4
+    title: "非法用法返回 Usage 提示并以退出码 1 结束"
+    type: feature
+    milestone: M2
+    prd_refs: [US-02]
+    depends_on: [S3]
+    acceptance:
+      - "node bin/hello.js --name 与 node bin/hello.js --name \"\" 时标准输出为空，标准错误恰为 Usage: hello [--name <name>] 加一个换行符，退出码为 1"
+      - "未知选项 --foo、--help、-h，位置参数 extra，以及歧义取值 --name -x 均输出同一 Usage 文案并以退出码 1 结束"
+      - "所有参数解析异常统一包装为 UsageError，标准错误中不出现 Node 内置的 ERR_PARSE_ARGS 英文原文"
+    test_first:
+      - "逐个执行上述非法用法命令，记录当前 stdout、stderr、退出码，确认尚未输出 Usage 文案或退出码不为 1（红态），实现后按同一脚本复跑比对"
+      - "先运行合法命令 node bin/hello.js 与 node bin/hello.js --name Alice，确认退出码 0 且标准错误为空，作为错误分支改造的回归基线"
+    scope_files:
+      - src/greet.js
+      - bin/hello.js
+    test_files: []
+
+  - id: S5
+    title: "编写核心函数单元测试"
+    type: chore
+    milestone: M3
+    prd_refs: [US-03]
+    depends_on: [S4]
+    acceptance:
+      - "test/greet.test.js 覆盖 UT-01 至 UT-14 共 14 条用例，直接 import src/greet.js，不创建子进程；pnpm test 失败数为 0 且退出码为 0"
+      - "异常路径用例（空字符串取值、缺失取值、未知选项、--help、位置参数、歧义取值）各至少 1 条，并断言抛出 UsageError"
+      - "用例名称包含 US 编号前缀，TAP 输出中可直接定位到具体用例名"
+    test_first:
+      - "先建立仅含一条断言的 test/greet.test.js 并运行 pnpm test，确认 node --test 能自动发现该文件并输出用例名与 ok 行"
+      - "先写 UT-08 与 UT-09 的断言，再对实现做临时变异（移除空值拦截）确认用例失败，随后还原；以此证明断言具备拦截能力"
+    scope_files: []
+    test_files:
+      - test/greet.test.js
+
+  - id: S6
+    title: "编写 CLI 黑盒验收测试"
+    type: chore
+    milestone: M3
+    prd_refs: [US-03]
+    depends_on: [S5]
+    acceptance:
+      - "test/cli.test.js 使用 spawnSync(process.execPath, [CLI_PATH, ...args]) 运行真实 CLI，覆盖 E2E-01 至 E2E-12 共 12 条用例，pnpm test 全部通过"
+      - "默认输出、--name 正常值、--name 缺失取值三类必需场景各有至少 1 条用例，且断言使用 strictEqual 对 stdout 整串（含换行）、stderr、status 三者同时比对"
+      - "入口路径通过 fileURLToPath(new URL('../bin/hello.js', import.meta.url)) 解析，测试结果与当前工作目录无关"
+    test_first:
+      - "先写 runCli 辅助函数与 E2E-01 单条断言并运行 pnpm test，确认用例通过后再扩展到 E2E-12 全量用例"
+      - "先对 E2E-05 做变异验证（临时让 --name 缺失取值返回 0），确认该用例失败并指出用例名，随后还原"
+    scope_files: []
+    test_files:
+      - test/cli.test.js
+
+  - id: S7
+    title: "建立 GitHub Actions 测试工作流"
+    type: chore
+    milestone: M4
+    prd_refs: [US-04]
+    depends_on: [S6]
+    acceptance:
+      - "推送任意分支或创建拉取请求后工作流自动触发，test job 在 Node.js 20.x 上执行 pnpm install --frozen-lockfile 与 pnpm test 并全部通过"
+      - "工作流包含 Assert zero runtime dependencies 步骤，日志输出 runtime dependencies: 0"
+      - "工作流权限仅 contents: read，单 job、timeout-minutes 为 10，单次运行耗时低于 2 分钟"
+    test_first:
+      - "先在本地按顺序复跑 CI 等价命令序列（pnpm install --frozen-lockfile、零依赖断言脚本、pnpm test），全部通过后再写入工作流文件"
+      - "写完后先用 python3 -c 加 yaml.safe_load 校验工作流 YAML 可解析，再推送观察首轮运行的 job 名称为 test 且日志含全部用例名"
+    scope_files:
+      - .github/workflows/ci.yml
+    test_files: []
+
+  - id: S8
+    title: "配置主分支合并前状态检查"
+    type: chore
+    milestone: M4
+    prd_refs: [US-04]
+    depends_on: [S7]
+    acceptance:
+      - "main 分支 ruleset 要求通过拉取请求合并、必需状态检查为 test、禁止强制推送与分支删除，gh api repos/{owner}/{repo}/rulesets 可读取到该配置"
+      - "构造测试拉取请求，其 CI 未通过时合并被拒绝（gh pr view --json statusCheckRollup 显示 test 未通过）；CI 通过后该拉取请求可合并"
+      - "ruleset 不要求人工批准，适配单人维护场景"
+    test_first:
+      - "先记录 gh api repos/{owner}/{repo}/rulesets 的当前输出作为基线，配置后再次读取并比对差异"
+      - "先创建必然失败的测试拉取请求，确认合并被拒绝（门禁红态），再修复使其 CI 通过并确认可合并"
+    scope_files: []
+    test_files: []
+
+  - id: S9
+    title: "演练测试拦截回归"
+    type: chore
+    milestone: M5
+    prd_refs: [US-03, US-04]
+    depends_on: [S7]
+    acceptance:
+      - "在临时分支把问候模板改为缺少感叹号后，本地 pnpm test 失败且退出码非 0，输出能指出具体失败用例名"
+      - "推送该临时分支后 CI 的 test job 失败，日志包含 not ok 行与对应用例名"
+      - "还原改动后主分支 CI 恢复绿色，演练提交不合入主干"
+    test_first:
+      - "先确认主分支当前 CI 为绿色基线并记录运行链接，再在临时分支制造变异，避免基线不明导致误判"
+      - "演练以红态开始：先令本地测试失败并留存输出，再还原并复跑确认全绿，两次结果均作为证据"
+    scope_files: []
+    test_files: []
+
+  - id: S10
+    title: "端到端验收复跑并核对成功指标"
+    type: chore
+    milestone: M5
+    prd_refs: [US-01, US-02, US-03, US-04, US-05]
+    depends_on: [S8, S9]
+    acceptance:
+      - "在临时目录全新克隆仓库，使用 Node.js 20.x 执行 pnpm install --frozen-lockfile 后依次运行 PRD 第 3 节四条场景命令，输出与 PRD 第 4 节验收标准逐条一致"
+      - "pnpm test 失败数为 0，默认输出、--name 正常值、--name 缺失取值三类场景各有至少 1 条用例；本地结果与 CI 日志一致"
+      - "PRD 第 5 节五项成功指标逐项核对并留存证据（命令输出、CI 运行链接），任一未达标即回到对应故事修复后整轮重跑"
+    test_first:
+      - "先按 PRD 第 3 节与第 5 节清单完整执行一遍，把未达标项记录为修复待办，再逐项修复并整轮重跑"
+      - "先在干净克隆中确认未安装任何第三方包即可运行 node bin/hello.js，再展开其余场景验收"
+    scope_files: []
+    test_files: []
