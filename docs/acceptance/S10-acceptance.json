@@ -1,0 +1,160 @@
+{
+  "story": "S10",
+  "verifiedAt": "2026-10-30T09:33:40Z",
+  "environment": {
+    "node": "v20.20.2",
+    "nodePath": "/Users/neolix/.nvm/versions/node/v20.20.2/bin/node",
+    "pnpm": "10.28.2",
+    "platform": "darwin arm64"
+  },
+  "clone": {
+    "source": "git@github.com:tomagoyaky/macos-hello.git",
+    "branch": "chore/S10",
+    "commitSha": "239bac0f5eeff519a999ef5860c717e165942ce2",
+    "directory": "/tmp/s10-clone-239bac0/macos-hello",
+    "installCommand": "pnpm install --frozen-lockfile",
+    "installExitCode": 0
+  },
+  "scenarios": [
+    {
+      "id": "SC1",
+      "name": "本地快速自检",
+      "command": "node bin/hello.js",
+      "stdout": "Hello, World!\n",
+      "stderr": "",
+      "exitCode": 0,
+      "runs": 3
+    },
+    {
+      "id": "SC2",
+      "name": "个性化演示",
+      "command": "node bin/hello.js --name Alice",
+      "stdout": "Hello, Alice!\n",
+      "stderr": "",
+      "exitCode": 0,
+      "runs": 1
+    },
+    {
+      "id": "SC3",
+      "name": "流水线验证",
+      "kind": "ci",
+      "runUrl": "https://github.com/tomagoyaky/macos-hello/actions/runs/41034064463",
+      "conclusion": "success"
+    },
+    {
+      "id": "SC4",
+      "name": "交付验收复跑",
+      "kind": "rerun",
+      "commands": [
+        "node bin/hello.js",
+        "node bin/hello.js --name Alice",
+        "pnpm test"
+      ],
+      "sameAsCi": true
+    }
+  ],
+  "testSuite": {
+    "local": {
+      "command": "pnpm test",
+      "summaryCommand": "node --test --test-reporter=spec",
+      "exitCode": 0,
+      "tests": 65,
+      "pass": 65,
+      "fail": 0,
+      "summaryLines": [
+        "ℹ tests 65",
+        "ℹ pass 65",
+        "ℹ fail 0"
+      ]
+    },
+    "ci": {
+      "runUrl": "https://github.com/tomagoyaky/macos-hello/actions/runs/41034064463",
+      "jobName": "test",
+      "conclusion": "success",
+      "tests": 57,
+      "pass": 57,
+      "fail": 0,
+      "summaryLines": [
+        "ℹ tests 57",
+        "ℹ pass 57",
+        "ℹ fail 0"
+      ]
+    },
+    "coverage": {
+      "defaultOutput": [
+        "US-01 AC1 / E2E-01 default greeting writes exactly \"Hello, World!\\n\" to stdout"
+      ],
+      "nameValue": [
+        "US-02 AC1 / E2E-03 \"--name Alice\" writes exactly \"Hello, Alice!\\n\" to stdout"
+      ],
+      "nameMissingValue": [
+        "US-02 AC3 / E2E-05 \"--name\" without a value prints exactly the Usage line and exits 1"
+      ]
+    }
+  },
+  "metrics": [
+    {
+      "id": "M1",
+      "name": "hello 命令可运行",
+      "status": "pass",
+      "evidence": [
+        "clean clone /tmp/s10-clone-239bac0/macos-hello: node bin/hello.js x3 => stdout \"Hello, World!\\n\", stderr \"\", exit code 0, all three runs identical"
+      ]
+    },
+    {
+      "id": "M2",
+      "name": "--name 参数可用",
+      "status": "pass",
+      "evidence": [
+        "clean clone: node bin/hello.js --name Alice => stdout \"Hello, Alice!\\n\", stderr \"\", exit code 0",
+        "clean clone: node bin/hello.js --name \"Wu Ming\" => stdout \"Hello, Wu Ming!\\n\", stderr \"\", exit code 0"
+      ]
+    },
+    {
+      "id": "M3",
+      "name": "测试通过率",
+      "status": "pass",
+      "fail": 0,
+      "coverage": {
+        "defaultOutput": 6,
+        "nameValue": 7,
+        "nameMissingValue": 4
+      },
+      "evidence": [
+        "node --test --test-reporter=spec => ℹ tests 65 / ℹ pass 65 / ℹ fail 0",
+        "CI run 41034064463 spec step => ℹ tests 57 / ℹ pass 57 / ℹ fail 0"
+      ]
+    },
+    {
+      "id": "M4",
+      "name": "CI 成功率",
+      "status": "pass",
+      "successRate": 1,
+      "branchScope": "main",
+      "runs": [
+        {
+          "url": "https://github.com/tomagoyaky/macos-hello/actions/runs/41026526005",
+          "conclusion": "success"
+        },
+        {
+          "url": "https://github.com/tomagoyaky/macos-hello/actions/runs/41023836794",
+          "conclusion": "success"
+        }
+      ],
+      "evidence": [
+        "gh run list --repo tomagoyaky/macos-hello --branch main --event push --limit 10 => 2/2 success",
+        "gh api actions/runs/41026526005 => name=CI, event=push, head_branch=main, conclusion=success",
+        "gh api actions/runs/41023836794 => name=CI, event=push, head_branch=main, conclusion=success"
+      ]
+    },
+    {
+      "id": "M5",
+      "name": "运行时第三方依赖数",
+      "status": "pass",
+      "dependencies": 0,
+      "evidence": [
+        "pnpm list --prod --depth 0 --json => []"
+      ]
+    }
+  ]
+}
