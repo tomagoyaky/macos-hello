@@ -7,7 +7,11 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const API_ROOT = 'https://api.github.com';
 const PROTECTED_REF = 'refs/heads/main';
 const REQUIRED_CHECK_CONTEXT = 'test';
-const TOKEN = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN ?? '';
+const localGhToken = () => {
+  const result = spawnSync('gh', ['auth', 'token'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+  return result.status === 0 ? result.stdout.trim() : '';
+};
+const TOKEN = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN ?? localGhToken();
 
 const resolveRepository = () => {
   const result = spawnSync('git', ['remote', 'get-url', 'origin'], { cwd: ROOT, encoding: 'utf8' });

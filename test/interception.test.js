@@ -28,7 +28,11 @@ const DRILL_TARGETS = ['test/greet.test.js', 'test/cli.test.js'];
 const TEMPLATE = '`Hello, ${name}!`';
 const MUTATED_TEMPLATE = '`Hello, ${name}`';
 const API_ROOT = 'https://api.github.com';
-const TOKEN = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN ?? '';
+const localGhToken = () => {
+  const result = spawnSync('gh', ['auth', 'token'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+  return result.status === 0 ? result.stdout.trim() : '';
+};
+const TOKEN = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN ?? localGhToken();
 
 const readText = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 

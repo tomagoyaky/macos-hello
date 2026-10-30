@@ -75,7 +75,10 @@ const SPEC_SUMMARY = /^ℹ (tests|pass|fail) (\d+)$/;
 const CASE_ID = /\b(?:E2E|UT)-\d{2}\b/g;
 const RUN_URL = /^https:\/\/github\.com\/[^/]+\/[^/]+\/actions\/runs\/(\d+)$/;
 const API_ROOT = 'https://api.github.com';
-const TOKEN = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN ?? '';
+const TOKEN = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN ?? (() => {
+  const result = spawnSync('gh', ['auth', 'token'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+  return result.status === 0 ? result.stdout.trim() : '';
+})();
 const BRANCHES = /^(?:chore\/S10|develop|main)$/;
 
 const readText = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
