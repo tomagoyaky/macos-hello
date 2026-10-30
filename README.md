@@ -52,3 +52,4 @@ pnpm test
 ## 许可
 
 私有项目，仅供内部工作流验证使用。
+<!-- S8 AC2: temporary passing PR merged to main to verify ruleset allows merged checks. -->
