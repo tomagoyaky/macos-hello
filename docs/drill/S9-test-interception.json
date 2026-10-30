@@ -1,0 +1,57 @@
+{
+  "story": "S9",
+  "baseline": {
+    "ref": "develop",
+    "headSha": "e82a81457ca116ee58b21c40de5c3dcbfdb1aec5",
+    "runUrl": "https://github.com/tomagoyaky/macos-hello/actions/runs/41023684797",
+    "conclusion": "success"
+  },
+  "mutation": {
+    "file": "src/greet.js",
+    "branch": "temp/s9-fail",
+    "headSha": "dd4f7510776879b564e9aeeb0751bb6d170e3cd9",
+    "runUrl": "https://github.com/tomagoyaky/macos-hello/actions/runs/41030609277",
+    "conclusion": "failure",
+    "change": "formatGreeting template `Hello, ${name}!` -> `Hello, ${name}` (exactly one character removed)",
+    "local": {
+      "command": "pnpm test",
+      "exitCode": 1,
+      "failingCases": [
+        "US-01 AC1 / E2E-01 default greeting writes exactly \"Hello, World!\\n\" to stdout",
+        "US-01 AC3 / E2E-02 two consecutive runs produce identical stdout, stderr and exit code",
+        "US-02 AC1 / E2E-03 \"--name Alice\" writes exactly \"Hello, Alice!\\n\" to stdout",
+        "US-02 AC2 / E2E-04 omitting --name keeps the default \"Hello, World!\\n\" greeting",
+        "US-02 AC2 / E2E-07 \"--name \\\"Wu Ming\\\"\" preserves the space in the greeting",
+        "US-02 AC2 / E2E-11 \"--name=Alice\" matches \"--name Alice\" character for character",
+        "US-02 AC4 / E2E-12 a 256-character --name value is emitted verbatim",
+        "S6 AC3 entry path is absolute so results do not depend on the current working directory",
+        "US-01 / UT-01 formatGreeting() returns \"Hello, World!\"",
+        "US-01 / UT-02 formatGreeting(\"Alice\") returns \"Hello, Alice!\"",
+        "US-01 / UT-03 formatGreeting(\"Wu Ming\") returns \"Hello, Wu Ming!\"",
+        "US-01 AC3 formatGreeting output ignores ambient env, clock and random state"
+      ]
+    },
+    "ci": {
+      "jobName": "test",
+      "notOkLines": [
+        "not ok 1 - US-01 AC1 / E2E-01 default greeting writes exactly \"Hello, World!\\\\n\" to stdout",
+        "not ok 2 - US-01 AC3 / E2E-02 two consecutive runs produce identical stdout, stderr and exit code",
+        "not ok 4 - US-02 AC1 / E2E-03 \"--name Alice\" writes exactly \"Hello, Alice!\\\\n\" to stdout",
+        "not ok 5 - US-02 AC2 / E2E-04 omitting --name keeps the default \"Hello, World!\\\\n\" greeting",
+        "not ok 8 - US-02 AC2 / E2E-07 \"--name \\\\\"Wu Ming\\\\\"\" preserves the space in the greeting",
+        "not ok 12 - US-02 AC2 / E2E-11 \"--name=Alice\" matches \"--name Alice\" character for character",
+        "not ok 13 - US-02 AC4 / E2E-12 a 256-character --name value is emitted verbatim",
+        "not ok 16 - S6 AC3 entry path is absolute so results do not depend on the current working directory",
+        "not ok 17 - US-01 / UT-01 formatGreeting() returns \"Hello, World!\"",
+        "not ok 18 - US-01 / UT-02 formatGreeting(\"Alice\") returns \"Hello, Alice!\"",
+        "not ok 19 - US-01 / UT-03 formatGreeting(\"Wu Ming\") returns \"Hello, Wu Ming!\"",
+        "not ok 32 - US-01 AC3 formatGreeting output ignores ambient env, clock and random state"
+      ]
+    }
+  },
+  "restore": {
+    "localExitCode": 0,
+    "branchDeleted": true,
+    "mergedIntoMain": false
+  }
+}
