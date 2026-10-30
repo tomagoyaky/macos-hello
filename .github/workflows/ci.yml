@@ -6,6 +6,8 @@ on:
   push:
     branches: [develop]
 
+# Least privilege: the test job only needs to read the repository. The ruleset
+# contract checks additionally require an optional GH_TOKEN secret (see below).
 permissions:
   contents: read
 
@@ -34,7 +36,17 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Lint
-        run: pnpm lint
+        run: pnpm run lint
+
+      # package.json lint only checks bin/hello.js, so parse every source file
+      # here without touching the zero-dependency package manifest.
+      - name: Syntax check all JavaScript sources
+        run: |
+          set -euo pipefail
+          for file in bin/*.js src/*.js test/*.js test-support/*.js; do
+            node --check "$file"
+          done
+          echo "syntax check passed"
 
   test:
     name: test
@@ -60,7 +72,12 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run tests
+        env:
+          # Optional: lets the four S8 ruleset probes verify live branch
+          # protection. When the secret is absent they skip by design (exit 0).
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
+          set -o pipefail
           mkdir -p test-results
           pnpm test 2>&1 | tee test-results/test.log
 
@@ -113,7 +130,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: pnpm build
+        run: pnpm run build
 
   deploy-staging:
     name: deploy-staging
@@ -131,6 +148,7 @@ jobs:
             echo "::error::STAGING_DEPLOY_KEY is empty. Configure it in Settings > Environments > staging > Environment secrets."
             exit 1
           fi
+          echo "STAGING_DEPLOY_KEY is configured."
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -141,8 +159,9 @@ jobs:
           node-version: 20.x
 
       # Placeholder only: this repository has no real staging target yet.
-      # Replace with the real deploy command before enabling this job.
-      - name: Deploy to staging
+      # Replace with the real deploy command before treating this as a release.
+      # Deployment not verified.
+      - name: Deploy to staging (placeholder, deployment not verified)
         env:
           STAGING_DEPLOY_KEY: ${{ secrets.STAGING_DEPLOY_KEY }}
         run: |
@@ -151,6 +170,7 @@ jobs:
 
       - name: Smoke check
         run: |
+          set -euo pipefail
           test "$(node bin/hello.js)" = "Hello, World!"
           test "$(node bin/hello.js --name Alice)" = "Hello, Alice!"
           echo "smoke checks passed"
