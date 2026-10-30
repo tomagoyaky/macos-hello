@@ -1,6 +1,6 @@
 {
   "story": "S10",
-  "verifiedAt": "2026-10-30T09:33:40Z",
+  "verifiedAt": "2026-10-30T09:36:00Z",
   "environment": {
     "node": "v20.20.2",
     "nodePath": "/Users/neolix/.nvm/versions/node/v20.20.2/bin/node",
@@ -10,8 +10,8 @@
   "clone": {
     "source": "git@github.com:tomagoyaky/macos-hello.git",
     "branch": "chore/S10",
-    "commitSha": "239bac0f5eeff519a999ef5860c717e165942ce2",
-    "directory": "/tmp/s10-clone-239bac0/macos-hello",
+    "commitSha": "459e90bead0d44bafb152afc9032cbc820699fe6",
+    "directory": "/tmp/s10-remote-clone-459e90b/macos-hello",
     "installCommand": "pnpm install --frozen-lockfile",
     "installExitCode": 0
   },
@@ -38,7 +38,7 @@
       "id": "SC3",
       "name": "流水线验证",
       "kind": "ci",
-      "runUrl": "https://github.com/tomagoyaky/macos-hello/actions/runs/41034064463",
+      "runUrl": "https://github.com/tomagoyaky/macos-hello/actions/runs/41034420760",
       "conclusion": "success"
     },
     {
@@ -68,15 +68,15 @@
       ]
     },
     "ci": {
-      "runUrl": "https://github.com/tomagoyaky/macos-hello/actions/runs/41034064463",
+      "runUrl": "https://github.com/tomagoyaky/macos-hello/actions/runs/41034420760",
       "jobName": "test",
       "conclusion": "success",
-      "tests": 57,
-      "pass": 57,
+      "tests": 65,
+      "pass": 65,
       "fail": 0,
       "summaryLines": [
-        "ℹ tests 57",
-        "ℹ pass 57",
+        "ℹ tests 65",
+        "ℹ pass 65",
         "ℹ fail 0"
       ]
     },
@@ -98,7 +98,7 @@
       "name": "hello 命令可运行",
       "status": "pass",
       "evidence": [
-        "clean clone /tmp/s10-clone-239bac0/macos-hello: node bin/hello.js x3 => stdout \"Hello, World!\\n\", stderr \"\", exit code 0, all three runs identical"
+        "clean clone /tmp/s10-remote-clone-459e90b/macos-hello: node bin/hello.js x3 => stdout \"Hello, World!\\n\", stderr \"\", exit code 0, all three runs identical"
       ]
     },
     {
@@ -106,8 +106,8 @@
       "name": "--name 参数可用",
       "status": "pass",
       "evidence": [
-        "clean clone: node bin/hello.js --name Alice => stdout \"Hello, Alice!\\n\", stderr \"\", exit code 0",
-        "clean clone: node bin/hello.js --name \"Wu Ming\" => stdout \"Hello, Wu Ming!\\n\", stderr \"\", exit code 0"
+        "clean clone /tmp/s10-remote-clone-459e90b/macos-hello: node bin/hello.js --name Alice => stdout \"Hello, Alice!\\n\", stderr \"\", exit code 0",
+        "clean clone /tmp/s10-remote-clone-459e90b/macos-hello: node bin/hello.js --name \"Wu Ming\" => stdout \"Hello, Wu Ming!\\n\", stderr \"\", exit code 0"
       ]
     },
     {
@@ -121,8 +121,8 @@
         "nameMissingValue": 4
       },
       "evidence": [
-        "node --test --test-reporter=spec => ℹ tests 65 / ℹ pass 65 / ℹ fail 0",
-        "CI run 41034064463 spec step => ℹ tests 57 / ℹ pass 57 / ℹ fail 0"
+        "node --test --test-reporter=spec (local, clean clone 459e90b) => ℹ tests 65 / ℹ pass 65 / ℹ fail 0",
+        "CI run 41034420760 spec step => ℹ tests 65 / ℹ pass 65 / ℹ fail 0"
       ]
     },
     {
