@@ -1,13 +1,41 @@
 name: CI
 
 on:
-  push:
   pull_request:
+    branches: [develop]
+  push:
+    branches: [develop]
 
 permissions:
   contents: read
 
 jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
   test:
     name: test
     runs-on: ubuntu-latest
@@ -26,17 +54,15 @@ jobs:
         with:
           node-version: 20.x
           cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Run tests
-        run: pnpm test
-
-      # Replay the suite with the spec reporter so the acceptance record can
-      # compare local and CI summaries line for line.
-      - name: Run tests with spec summary
-        run: node --test --test-reporter=spec
+        run: |
+          mkdir -p test-results
+          pnpm test 2>&1 | tee test-results/test.log
 
       - name: Assert zero runtime dependencies
         run: |
@@ -52,3 +78,79 @@ jobs:
             exit 1
           fi
           echo "runtime dependencies: 0"
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: test-results/
+          if-no-files-found: warn
+          retention-days: 7
+
+  build:
+    name: build
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+  deploy-staging:
+    name: deploy-staging
+    needs: [lint, test, build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    environment: staging
+    timeout-minutes: 10
+    steps:
+      - name: Require STAGING_DEPLOY_KEY
+        env:
+          STAGING_DEPLOY_KEY: ${{ secrets.STAGING_DEPLOY_KEY }}
+        run: |
+          if [ -z "${STAGING_DEPLOY_KEY}" ]; then
+            echo "::error::STAGING_DEPLOY_KEY is empty. Configure it in Settings > Environments > staging > Environment secrets."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      # Placeholder only: this repository has no real staging target yet.
+      # Replace with the real deploy command before enabling this job.
+      - name: Deploy to staging
+        env:
+          STAGING_DEPLOY_KEY: ${{ secrets.STAGING_DEPLOY_KEY }}
+        run: |
+          echo "::warning::No staging deploy target is configured; running the placeholder deploy. Deployment not verified."
+          echo "Would deploy ${GITHUB_REPOSITORY}@${GITHUB_SHA} from ${GITHUB_REF_NAME} to environment staging."
+
+      - name: Smoke check
+        run: |
+          test "$(node bin/hello.js)" = "Hello, World!"
+          test "$(node bin/hello.js --name Alice)" = "Hello, Alice!"
+          echo "smoke checks passed"
