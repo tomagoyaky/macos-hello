@@ -1,101 +1,114 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { isAbsolute } from 'node:path';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
+// Absolute entry path keeps every case independent of the current working directory.
 const CLI_PATH = fileURLToPath(new URL('../bin/hello.js', import.meta.url));
-const EXPECTED_STDOUT = Buffer.from('Hello, World!\n', 'utf8');
-const EXPECTED_USAGE = Buffer.from('Usage: hello [--name <name>]\n', 'utf8');
+const DEFAULT_STDOUT = 'Hello, World!\n';
+const USAGE_STDERR = 'Usage: hello [--name <name>]\n';
 
-const runCli = (...args) => spawnSync(process.execPath, [CLI_PATH, ...args]);
+/**
+ * Run the real CLI in a child process and decode its streams as UTF-8 text.
+ * @param {...string} args arguments after the script path
+ * @returns {{ stdout: string, stderr: string, status: number|null }}
+ */
+function runCli(...args) {
+  const { stdout, stderr, status } = spawnSync(process.execPath, [CLI_PATH, ...args]);
+  return { stdout: stdout.toString('utf8'), stderr: stderr.toString('utf8'), status };
+}
 
-const expectedGreeting = (name) => Buffer.from(`Hello, ${name}!\n`, 'utf8');
+/**
+ * Run the real CLI from an explicit working directory to prove cwd independence.
+ * @param {string} cwd working directory of the child process
+ * @param {...string} args arguments after the script path
+ * @returns {{ stdout: string, stderr: string, status: number|null }}
+ */
+function runCliFrom(cwd, ...args) {
+  const { stdout, stderr, status } = spawnSync(process.execPath, [CLI_PATH, ...args], { cwd });
+  return { stdout: stdout.toString('utf8'), stderr: stderr.toString('utf8'), status };
+}
 
-const assertGreeting = (result, expectedStdout, command) => {
-  assert.equal(result.stderr.length, 0, `${command}: stderr must be empty, got: ${JSON.stringify(result.stderr.toString())}`);
-  assert.equal(result.status, 0, `${command}: exit code must be 0, got ${result.status}; stderr: ${result.stderr.toString()}`);
-  assert.ok(
-    result.stdout.equals(expectedStdout),
-    `${command}: stdout must be exactly ${JSON.stringify(expectedStdout.toString())} (${expectedStdout.length} bytes), ` +
-      `got ${JSON.stringify(result.stdout.toString())} (${result.stdout.length} bytes)`,
+const greeting = (name) => `Hello, ${name}!\n`;
+
+/**
+ * Assert the stdout/stderr/exit-code triple of a successful greeting run.
+ * @param {{ stdout: string, stderr: string, status: number|null }} result child process result
+ * @param {string} expectedStdout full expected stdout including the trailing newline
+ * @param {string} command human readable command used in failure messages
+ */
+function assertGreeting(result, expectedStdout, command) {
+  assert.strictEqual(result.status, 0, `${command}: exit code must be 0, got ${result.status}`);
+  assert.strictEqual(result.stderr, '', `${command}: stderr must be empty, got ${JSON.stringify(result.stderr)}`);
+  assert.strictEqual(
+    result.stdout,
+    expectedStdout,
+    `${command}: stdout must be exactly ${JSON.stringify(expectedStdout)}, got ${JSON.stringify(result.stdout)}`,
   );
-};
+}
 
-const assertUsageError = (args, command) => {
+/**
+ * Assert the stdout/stderr/exit-code triple of an invalid usage run.
+ * @param {string[]} args raw CLI arguments
+ * @param {string} command human readable command used in failure messages
+ */
+function assertUsageError(args, command) {
   const result = runCli(...args);
-  assert.equal(result.status, 1, `${command}: exit code must be 1, got ${result.status}`);
-  assert.equal(result.stdout.length, 0, `${command}: stdout must be empty, got ${JSON.stringify(result.stdout.toString())}`);
-  assert.ok(
-    result.stderr.equals(EXPECTED_USAGE),
-    `${command}: stderr must be exactly ${JSON.stringify(EXPECTED_USAGE.toString())} (${EXPECTED_USAGE.length} bytes), ` +
-      `got ${JSON.stringify(result.stderr.toString())} (${result.stderr.length} bytes)`,
+  assert.strictEqual(result.status, 1, `${command}: exit code must be 1, got ${result.status}`);
+  assert.strictEqual(result.stdout, '', `${command}: stdout must be empty, got ${JSON.stringify(result.stdout)}`);
+  assert.strictEqual(
+    result.stderr,
+    USAGE_STDERR,
+    `${command}: stderr must be exactly ${JSON.stringify(USAGE_STDERR)}, got ${JSON.stringify(result.stderr)}`,
   );
-  assert.equal(
+  assert.strictEqual(
     result.stderr.includes('ERR_PARSE_ARGS'),
     false,
-    `${command}: stderr must not leak Node's ERR_PARSE_ARGS text, got ${JSON.stringify(result.stderr.toString())}`,
+    `${command}: stderr must not leak Node's ERR_PARSE_ARGS text, got ${JSON.stringify(result.stderr)}`,
   );
-};
+}
 
 test('US-01 AC1 / E2E-01 default greeting writes exactly "Hello, World!\\n" to stdout', () => {
-  const { status, stdout, stderr } = runCli();
-  assert.equal(stderr.length, 0, `stderr must be empty, got: ${JSON.stringify(stderr.toString())}`);
-  assert.equal(status, 0, `exit code must be 0, got ${status}; stderr: ${stderr.toString()}`);
-  assert.ok(
-    stdout.equals(EXPECTED_STDOUT),
-    `stdout must be exactly ${JSON.stringify(EXPECTED_STDOUT.toString())} (${EXPECTED_STDOUT.length} bytes), ` +
-      `got ${JSON.stringify(stdout.toString())} (${stdout.length} bytes)`,
-  );
+  assertGreeting(runCli(), DEFAULT_STDOUT, 'no arguments');
 });
 
-test('US-01 AC3 / E2E-02 two consecutive runs produce byte-identical stdout', () => {
+test('US-01 AC3 / E2E-02 two consecutive runs produce identical stdout, stderr and exit code', () => {
   const first = runCli();
   const second = runCli();
-  assert.equal(first.status, 0, `first run exit code must be 0, got ${first.status}; stderr: ${first.stderr.toString()}`);
-  assert.equal(second.status, 0, `second run exit code must be 0, got ${second.status}; stderr: ${second.stderr.toString()}`);
-  assert.equal(first.stderr.length, 0, `first run stderr must be empty, got: ${JSON.stringify(first.stderr.toString())}`);
-  assert.equal(second.stderr.length, 0, `second run stderr must be empty, got: ${JSON.stringify(second.stderr.toString())}`);
-  assert.equal(
-    Buffer.compare(first.stdout, second.stdout),
-    0,
-    `stdout must be byte-identical between runs\nfirst:  ${JSON.stringify(first.stdout.toString())}\nsecond: ${JSON.stringify(second.stdout.toString())}`,
+  assertGreeting(first, DEFAULT_STDOUT, 'first run');
+  assertGreeting(second, DEFAULT_STDOUT, 'second run');
+  assert.strictEqual(
+    first.stdout,
+    second.stdout,
+    `stdout must be identical between runs\nfirst:  ${JSON.stringify(first.stdout)}\nsecond: ${JSON.stringify(second.stdout)}`,
   );
-  assert.ok(first.stdout.equals(EXPECTED_STDOUT), 'byte-identical stdout must also equal the expected greeting');
+  assert.strictEqual(first.stderr, second.stderr, 'stderr must be identical between runs');
+  assert.strictEqual(first.status, second.status, 'exit code must be identical between runs');
 });
 
 test('US-01 AC3 bin/hello.js passes "node --check" syntax validation', () => {
-  const { status, stderr } = spawnSync(process.execPath, ['--check', CLI_PATH]);
-  assert.equal(status, 0, `node --check must pass, got exit code ${status}; stderr: ${stderr.toString()}`);
+  const { status, stdout, stderr } = spawnSync(process.execPath, ['--check', CLI_PATH], { encoding: 'utf8' });
+  assert.strictEqual(status, 0, `node --check must pass, got exit code ${status}; stderr: ${stderr}`);
+  assert.strictEqual(stdout, '', `node --check must not write to stdout, got ${JSON.stringify(stdout)}`);
+  assert.strictEqual(stderr, '', `node --check must not write to stderr, got ${JSON.stringify(stderr)}`);
 });
 
 test('US-02 AC1 / E2E-03 "--name Alice" writes exactly "Hello, Alice!\\n" to stdout', () => {
-  assertGreeting(runCli('--name', 'Alice'), expectedGreeting('Alice'), '--name Alice');
+  assertGreeting(runCli('--name', 'Alice'), greeting('Alice'), '--name Alice');
 });
 
-test('US-02 AC2 / E2E-07 "--name \\"Wu Ming\\"" preserves the space in the greeting', () => {
-  assertGreeting(runCli('--name', 'Wu Ming'), expectedGreeting('Wu Ming'), '--name "Wu Ming"');
-});
-
-test('US-02 AC2 / E2E-11 "--name=Alice" matches "--name Alice" byte-for-byte', () => {
-  const separated = runCli('--name', 'Alice');
-  const inline = runCli('--name=Alice');
-  assertGreeting(separated, expectedGreeting('Alice'), '--name Alice');
-  assertGreeting(inline, expectedGreeting('Alice'), '--name=Alice');
-  assert.equal(
-    Buffer.compare(separated.stdout, inline.stdout),
-    0,
-    `inline form must match separated form\nseparated: ${JSON.stringify(separated.stdout.toString())}\ninline:    ${JSON.stringify(inline.stdout.toString())}`,
+test('US-02 AC2 / E2E-04 omitting --name keeps the default "Hello, World!\\n" greeting', () => {
+  const withFlag = runCli('--name', 'World');
+  const withoutFlag = runCli();
+  assertGreeting(withoutFlag, DEFAULT_STDOUT, 'no arguments');
+  assertGreeting(withFlag, DEFAULT_STDOUT, '--name World');
+  assert.strictEqual(
+    withoutFlag.stdout,
+    withFlag.stdout,
+    `omitting --name must match the explicit default\nomitted: ${JSON.stringify(withoutFlag.stdout)}\nexplicit: ${JSON.stringify(withFlag.stdout)}`,
   );
-});
-
-test('US-02 AC3 / E2E-04 omitting --name keeps the default "Hello, World!\\n" greeting', () => {
-  assertGreeting(runCli(), EXPECTED_STDOUT, 'no arguments');
-});
-
-test('US-02 AC4 / E2E-12 a 256-character --name value is emitted verbatim', () => {
-  const longName = `${'Ab c"d\\'.repeat(36)}efGH`;
-  assert.equal(longName.length, 256, `fixture must be exactly 256 characters, got ${longName.length}`);
-  assertGreeting(runCli('--name', longName), expectedGreeting(longName), '--name <256 chars>');
 });
 
 test('US-02 AC3 / E2E-05 "--name" without a value prints exactly the Usage line and exits 1', () => {
@@ -104,6 +117,10 @@ test('US-02 AC3 / E2E-05 "--name" without a value prints exactly the Usage line 
 
 test('US-02 AC3 / E2E-06 "--name \\"\\"" (empty value) prints exactly the Usage line and exits 1', () => {
   assertUsageError(['--name', ''], '--name ""');
+});
+
+test('US-02 AC2 / E2E-07 "--name \\"Wu Ming\\"" preserves the space in the greeting', () => {
+  assertGreeting(runCli('--name', 'Wu Ming'), greeting('Wu Ming'), '--name "Wu Ming"');
 });
 
 test('US-02 AC3 / E2E-08 unknown option "--foo" prints exactly the Usage line and exits 1', () => {
@@ -118,10 +135,41 @@ test('US-02 AC3 / E2E-10 "--help" is rejected as an unknown option with the Usag
   assertUsageError(['--help'], '--help');
 });
 
+test('US-02 AC2 / E2E-11 "--name=Alice" matches "--name Alice" character for character', () => {
+  const separated = runCli('--name', 'Alice');
+  const inline = runCli('--name=Alice');
+  assertGreeting(separated, greeting('Alice'), '--name Alice');
+  assertGreeting(inline, greeting('Alice'), '--name=Alice');
+  assert.strictEqual(
+    inline.stdout,
+    separated.stdout,
+    `inline form must match separated form\nseparated: ${JSON.stringify(separated.stdout)}\ninline:    ${JSON.stringify(inline.stdout)}`,
+  );
+});
+
+test('US-02 AC4 / E2E-12 a 256-character --name value is emitted verbatim', () => {
+  const longName = `${'Ab c"d\\'.repeat(36)}efGH`;
+  assert.strictEqual(longName.length, 256, `fixture must be exactly 256 characters, got ${longName.length}`);
+  assertGreeting(runCli('--name', longName), greeting(longName), '--name <256 chars>');
+});
+
 test('US-02 AC3 "-h" is rejected as an unknown option with the Usage line and exit 1', () => {
   assertUsageError(['-h'], '-h');
 });
 
 test('US-02 AC3 ambiguous value "--name -x" prints exactly the Usage line and exits 1', () => {
   assertUsageError(['--name', '-x'], '--name -x');
+});
+
+test('S6 AC3 entry path is absolute so results do not depend on the current working directory', () => {
+  assert.strictEqual(isAbsolute(CLI_PATH), true, `CLI_PATH must be absolute, got ${CLI_PATH}`);
+  const fromTemporaryDirectory = runCliFrom(tmpdir(), '--name', 'Alice');
+  const fromRepositoryRoot = runCliFrom(fileURLToPath(new URL('..', import.meta.url)), '--name', 'Alice');
+  assertGreeting(fromTemporaryDirectory, greeting('Alice'), `cwd=${tmpdir()} --name Alice`);
+  assertGreeting(fromRepositoryRoot, greeting('Alice'), 'cwd=repo root --name Alice');
+  assert.strictEqual(
+    fromTemporaryDirectory.stdout,
+    fromRepositoryRoot.stdout,
+    `stdout must not depend on cwd\ntmpdir: ${JSON.stringify(fromTemporaryDirectory.stdout)}\nrepo:   ${JSON.stringify(fromRepositoryRoot.stdout)}`,
+  );
 });
