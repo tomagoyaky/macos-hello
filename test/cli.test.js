@@ -153,6 +153,37 @@ test('US-02 AC4 / E2E-12 a 256-character --name value is emitted verbatim', () =
   assertGreeting(runCli('--name', longName), greeting(longName), '--name <256 chars>');
 });
 
+test('US-02 AC4 / E2E-13 "--name \\" \\"" and a whitespace-only multi-space name are preserved verbatim', () => {
+  assertGreeting(runCli('--name', ' '), greeting(' '), '--name " "');
+  assertGreeting(runCli('--name', '   '), greeting('   '), '--name "   "');
+  assertGreeting(runCli('--name= '), greeting(' '), '--name=" "');
+});
+
+test('US-02 AC4 / E2E-14 a tab inside --name is emitted byte for byte on a single line', () => {
+  const name = 'a\tb';
+  const result = runCli('--name', name);
+  assertGreeting(result, greeting(name), '--name "a\\tb"');
+  assert.equal(
+    result.stdout.split('\n').length,
+    2,
+    `a tab must not introduce a line break, got ${JSON.stringify(result.stdout)}`,
+  );
+});
+
+test('US-02 AC4 / E2E-15 an embedded newline is passed through verbatim, which conflicts with the D1 single-line rule', () => {
+  const name = 'line1\nline2';
+  const result = runCli('--name', name);
+  // D8 freezes raw concatenation, so the newline survives and stdout spans two
+  // lines; D1 promises exactly one line. The conflict is recorded here instead
+  // of being hidden: changing either rule must update this case.
+  assertGreeting(result, greeting(name), '--name "line1\\nline2"');
+  assert.equal(
+    result.stdout.split('\n').length,
+    3,
+    `D8 raw passthrough makes stdout span two lines, contradicting D1; got ${JSON.stringify(result.stdout)}`,
+  );
+});
+
 test('US-02 AC3 "-h" is rejected as an unknown option with the Usage line and exit 1', () => {
   assertUsageError(['-h'], '-h');
 });

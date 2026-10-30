@@ -81,6 +81,20 @@ test('US-02 / UT-14 parseCliArgs(["--name", "a", "--name", "b"]) keeps the last 
   assert.deepEqual(parseCliArgs(['--name', 'a', '--name', 'b']), { name: 'b' });
 });
 
+test('US-02 / UT-15 parseCliArgs(["--name", " "]) keeps a whitespace-only value instead of trimming it', () => {
+  assert.deepEqual(parseCliArgs(['--name', ' ']), { name: ' ' });
+  assert.deepEqual(parseCliArgs(['--name', '   ']), { name: '   ' });
+});
+
+test('US-02 / UT-16 parseCliArgs(["--name= "]) keeps a whitespace-only inline value', () => {
+  assert.deepEqual(parseCliArgs(['--name= ']), { name: ' ' });
+});
+
+test('US-02 AC4 formatGreeting preserves whitespace-only names verbatim', () => {
+  assert.equal(formatGreeting(' '), 'Hello,  !');
+  assert.equal(formatGreeting('   '), 'Hello,    !');
+});
+
 test('US-01 AC3 formatGreeting does not reference process, clock or randomness', () => {
   const banned = [
     [/\bprocess\b/, 'process'],

@@ -5,6 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { githubHeaders, probeGithub, resolveApiRoot, resolveRepository, resolveToken } from '../test-support/live-github.js';
 
 // S9 drill record contract (written by the implementation step):
 // {
@@ -27,12 +28,9 @@ const RECORD_PATH = 'docs/drill/S9-test-interception.json';
 const DRILL_TARGETS = ['test/greet.test.js', 'test/cli.test.js'];
 const TEMPLATE = '`Hello, ${name}!`';
 const MUTATED_TEMPLATE = '`Hello, ${name}`';
-const API_ROOT = 'https://api.github.com';
-const localGhToken = () => {
-  const result = spawnSync('gh', ['auth', 'token'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-  return result.status === 0 ? result.stdout.trim() : '';
-};
-const TOKEN = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN ?? localGhToken();
+const API_ROOT = resolveApiRoot();
+const USER_AGENT = 'macos-hello-interception-test';
+const TOKEN = resolveToken();
 
 const readText = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
@@ -108,29 +106,19 @@ const runDrill = () =>
   })());
 
 /**
- * Resolve owner/repo from the origin remote or GITHUB_REPOSITORY.
- * @returns {string} owner/repo slug
+ * Memoized owner/repo lookup shared by the network assertions.
+ * @returns {string|null} owner/repo slug, or null when it cannot be resolved
  */
-const resolveRepository = () => {
-  const result = spawnSync('git', ['remote', 'get-url', 'origin'], { cwd: ROOT, encoding: 'utf8' });
-  const origin = result.status === 0 ? result.stdout.trim() : '';
-  for (const candidate of [origin, process.env.GITHUB_REPOSITORY ?? '']) {
-    const match = /github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?\/?$/.exec(candidate);
-    if (match) return `${match[1]}/${match[2]}`;
-  }
-  assert.fail(`cannot resolve owner/repo from origin ${JSON.stringify(origin)} or GITHUB_REPOSITORY`);
-};
-
 let repository;
 const repoSlug = () => (repository ??= resolveRepository());
 
+// The two CI-run assertion cases below touch the network; an offline machine or
+// an unusable token must skip them with a readable reason instead of failing.
+const LIVE_SKIP = await probeGithub({ repository: repoSlug(), token: TOKEN, apiRoot: API_ROOT, userAgent: USER_AGENT });
+
 const getJson = async (path) => {
   const response = await fetch(`${API_ROOT}/repos/${repoSlug()}${path}`, {
-    headers: {
-      Accept: 'application/vnd.github+json',
-      'User-Agent': 'macos-hello-interception-test',
-      ...(TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {}),
-    },
+    headers: githubHeaders(TOKEN, USER_AGENT),
   });
   const body = await response.json().catch(() => null);
   assert.equal(
@@ -188,7 +176,7 @@ test('S9 AC1 the drill record documents a non-zero local "pnpm test" run with fa
   );
 });
 
-test('S9 AC2 the drill record documents a failed CI "test" job whose log contains "not ok" lines', async () => {
+test('S9 AC2 the drill record documents a failed CI "test" job whose log contains "not ok" lines', { skip: LIVE_SKIP ?? undefined }, async () => {
   const { mutation } = readRecord();
   assert.match(String(mutation.branch), /^temp\/s9/, 'the drill must run on a temporary temp/s9* branch');
   assert.equal(mutation.conclusion, 'failure');
@@ -215,7 +203,7 @@ test('S9 AC2 the drill record documents a failed CI "test" job whose log contain
   );
 });
 
-test('S9 AC3 baseline CI is green, the temporary branch is gone and the drill commit never reached main', async () => {
+test('S9 AC3 baseline CI is green, the temporary branch is gone and the drill commit never reached main', { skip: LIVE_SKIP ?? undefined }, async () => {
   const { baseline, mutation, restore } = readRecord();
   assert.ok(['develop', 'main'].includes(baseline.ref), `baseline ref must be develop or main, got ${baseline.ref}`);
   assert.equal(baseline.conclusion, 'success');

@@ -5,6 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { githubHeaders, probeGithub, resolveApiRoot, resolveRepository, resolveToken } from '../test-support/live-github.js';
 
 // S10 acceptance record contract (written by the implementation step):
 // docs/acceptance/S10-acceptance.json
@@ -74,11 +75,9 @@ const TAP_SUMMARY = /^# (tests|pass|fail) (\d+)$/;
 const SPEC_SUMMARY = /^ℹ (tests|pass|fail) (\d+)$/;
 const CASE_ID = /\b(?:E2E|UT)-\d{2}\b/g;
 const RUN_URL = /^https:\/\/github\.com\/[^/]+\/[^/]+\/actions\/runs\/(\d+)$/;
-const API_ROOT = 'https://api.github.com';
-const TOKEN = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN ?? (() => {
-  const result = spawnSync('gh', ['auth', 'token'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-  return result.status === 0 ? result.stdout.trim() : '';
-})();
+const API_ROOT = resolveApiRoot();
+const USER_AGENT = 'macos-hello-acceptance-test';
+const TOKEN = resolveToken();
 const BRANCHES = /^(?:chore\/S10|develop|main)$/;
 
 const readText = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -262,29 +261,19 @@ const assertEvidence = (evidence, label) => {
 };
 
 /**
- * Resolve owner/repo from the origin remote or GITHUB_REPOSITORY.
- * @returns {string} owner/repo slug
+ * Memoized owner/repo lookup shared by the network assertions.
+ * @returns {string|null} owner/repo slug, or null when it cannot be resolved
  */
-const resolveRepository = () => {
-  const result = spawnSync('git', ['remote', 'get-url', 'origin'], { cwd: ROOT, encoding: 'utf8' });
-  const origin = result.status === 0 ? result.stdout.trim() : '';
-  for (const candidate of [origin, process.env.GITHUB_REPOSITORY ?? '']) {
-    const match = /github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?\/?$/.exec(candidate);
-    if (match) return `${match[1]}/${match[2]}`;
-  }
-  assert.fail(`cannot resolve owner/repo from origin ${JSON.stringify(origin)} or GITHUB_REPOSITORY`);
-};
-
 let repository;
 const repoSlug = () => (repository ??= resolveRepository());
 
+// Only the CI-run replay below touches the network; an offline machine or an
+// unusable token must skip that case with a readable reason instead of failing.
+const LIVE_SKIP = await probeGithub({ repository: repoSlug(), token: TOKEN, apiRoot: API_ROOT, userAgent: USER_AGENT });
+
 const getJson = async (path) => {
   const response = await fetch(`${API_ROOT}/repos/${repoSlug()}${path}`, {
-    headers: {
-      Accept: 'application/vnd.github+json',
-      'User-Agent': 'macos-hello-acceptance-test',
-      ...(TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {}),
-    },
+    headers: githubHeaders(TOKEN, USER_AGENT),
   });
   const body = await response.json().catch(() => null);
   assert.equal(
@@ -524,7 +513,7 @@ test('S10 AC3 the acceptance record lists the five PRD success metrics with pass
   assert.deepEqual(entries, [], 'production dependency entries must stay at zero');
 });
 
-test('S10 AC3 the recorded CI runs resolve to successful "CI" workflow runs with a green "test" job', async () => {
+test('S10 AC3 the recorded CI runs resolve to successful "CI" workflow runs with a green "test" job', { skip: LIVE_SKIP ?? undefined }, async () => {
   const record = readRecord();
   const urls = new Set();
   const sc3 = (record.scenarios ?? []).find((scenario) => scenario.id === 'SC3');
