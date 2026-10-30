@@ -1,0 +1,19 @@
+{
+  "name": "macos-hello",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A minimal macOS-friendly Hello World CLI",
+  "bin": {
+    "hello": "./bin/hello.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.28.2",
+  "scripts": {
+    "lint": "node --check bin/hello.js",
+    "test": "node --test",
+    "build": "node --check bin/hello.js"
+  }
+}
