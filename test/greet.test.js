@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { formatGreeting } from '../src/greet.js';
+import { formatGreeting, parseCliArgs } from '../src/greet.js';
 
 const GREET_SOURCE = readFileSync(new URL('../src/greet.js', import.meta.url), 'utf8');
 const GREET_CODE = GREET_SOURCE.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
@@ -40,5 +40,19 @@ test('US-01 AC3 formatGreeting output ignores ambient env, clock and random stat
       if (!(key in envSnapshot)) delete process.env[key];
     }
     Object.assign(process.env, envSnapshot);
+  }
+});
+
+test('US-02 AC3 parseCliArgs wraps every parse failure as UsageError', () => {
+  const invalidArgv = [['--name', ''], ['--name'], ['--foo'], ['--help'], ['-h'], ['extra'], ['--name', '-x']];
+  for (const argv of invalidArgv) {
+    assert.throws(
+      () => parseCliArgs(argv),
+      (error) => {
+        assert.equal(error.name, 'UsageError', `${JSON.stringify(argv)} must throw UsageError, got ${error.name}: ${error.message}`);
+        return true;
+      },
+      `${JSON.stringify(argv)} must be rejected`,
+    );
   }
 });

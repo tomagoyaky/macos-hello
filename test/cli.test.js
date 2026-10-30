@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const CLI_PATH = fileURLToPath(new URL('../bin/hello.js', import.meta.url));
 const EXPECTED_STDOUT = Buffer.from('Hello, World!\n', 'utf8');
+const EXPECTED_USAGE = Buffer.from('Usage: hello [--name <name>]\n', 'utf8');
 
 const runCli = (...args) => spawnSync(process.execPath, [CLI_PATH, ...args]);
 
@@ -17,6 +18,22 @@ const assertGreeting = (result, expectedStdout, command) => {
     result.stdout.equals(expectedStdout),
     `${command}: stdout must be exactly ${JSON.stringify(expectedStdout.toString())} (${expectedStdout.length} bytes), ` +
       `got ${JSON.stringify(result.stdout.toString())} (${result.stdout.length} bytes)`,
+  );
+};
+
+const assertUsageError = (args, command) => {
+  const result = runCli(...args);
+  assert.equal(result.status, 1, `${command}: exit code must be 1, got ${result.status}`);
+  assert.equal(result.stdout.length, 0, `${command}: stdout must be empty, got ${JSON.stringify(result.stdout.toString())}`);
+  assert.ok(
+    result.stderr.equals(EXPECTED_USAGE),
+    `${command}: stderr must be exactly ${JSON.stringify(EXPECTED_USAGE.toString())} (${EXPECTED_USAGE.length} bytes), ` +
+      `got ${JSON.stringify(result.stderr.toString())} (${result.stderr.length} bytes)`,
+  );
+  assert.equal(
+    result.stderr.includes('ERR_PARSE_ARGS'),
+    false,
+    `${command}: stderr must not leak Node's ERR_PARSE_ARGS text, got ${JSON.stringify(result.stderr.toString())}`,
   );
 };
 
@@ -79,4 +96,32 @@ test('US-02 AC4 / E2E-12 a 256-character --name value is emitted verbatim', () =
   const longName = `${'Ab c"d\\'.repeat(36)}efGH`;
   assert.equal(longName.length, 256, `fixture must be exactly 256 characters, got ${longName.length}`);
   assertGreeting(runCli('--name', longName), expectedGreeting(longName), '--name <256 chars>');
+});
+
+test('US-02 AC3 / E2E-05 "--name" without a value prints exactly the Usage line and exits 1', () => {
+  assertUsageError(['--name'], '--name');
+});
+
+test('US-02 AC3 / E2E-06 "--name \\"\\"" (empty value) prints exactly the Usage line and exits 1', () => {
+  assertUsageError(['--name', ''], '--name ""');
+});
+
+test('US-02 AC3 / E2E-08 unknown option "--foo" prints exactly the Usage line and exits 1', () => {
+  assertUsageError(['--foo'], '--foo');
+});
+
+test('US-02 AC3 / E2E-09 positional argument "extra" prints exactly the Usage line and exits 1', () => {
+  assertUsageError(['extra'], 'extra');
+});
+
+test('US-02 AC3 / E2E-10 "--help" is rejected as an unknown option with the Usage line and exit 1', () => {
+  assertUsageError(['--help'], '--help');
+});
+
+test('US-02 AC3 "-h" is rejected as an unknown option with the Usage line and exit 1', () => {
+  assertUsageError(['-h'], '-h');
+});
+
+test('US-02 AC3 ambiguous value "--name -x" prints exactly the Usage line and exits 1', () => {
+  assertUsageError(['--name', '-x'], '--name -x');
 });
