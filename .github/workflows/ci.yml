@@ -36,7 +36,7 @@ jobs:
       # Replay the suite with the spec reporter so the acceptance record can
       # compare local and CI summaries line for line.
       - name: Run tests with spec summary
-        run: pnpm test -- --test-reporter=spec
+        run: node --test --test-reporter=spec
 
       - name: Assert zero runtime dependencies
         run: |
